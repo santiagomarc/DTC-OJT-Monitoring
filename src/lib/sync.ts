@@ -57,18 +57,43 @@ async function ensureSheetTab(
   )
 
   if (!exists) {
-    await sheets.spreadsheets.batchUpdate({
-      spreadsheetId: SPREADSHEET_ID,
-      requestBody: {
-        requests: [
-          {
-            addSheet: {
-              properties: { title: tabName },
-            },
-          },
-        ],
-      },
+    // Look for a template tab (usually "Copy of LASTNAME, FIRST NAME, MI." or similar)
+    const templateSheet = meta.data.sheets?.find((s) => {
+      const title = s.properties?.title || ''
+      return title.toUpperCase().includes('LASTNAME, FIRST NAME')
     })
+
+    if (templateSheet && templateSheet.properties?.sheetId !== undefined) {
+      console.log(`[sync] Duplicating template sheet "${templateSheet.properties.title}" for new tab: "${tabName}"`)
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: {
+          requests: [
+            {
+              duplicateSheet: {
+                sourceSheetId: templateSheet.properties.sheetId,
+                newSheetName: tabName,
+                insertSheetIndex: 1, // Insert right after Master sheet
+              },
+            },
+          ],
+        },
+      })
+    } else {
+      console.warn(`[sync] Template sheet matching "LASTNAME, FIRST NAME" not found. Falling back to creating a blank tab.`)
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId: SPREADSHEET_ID,
+        requestBody: {
+          requests: [
+            {
+              addSheet: {
+                properties: { title: tabName },
+              },
+            },
+          ],
+        },
+      })
+    }
   }
 }
 

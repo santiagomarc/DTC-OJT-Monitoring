@@ -31,6 +31,9 @@ export default async function AdminDashboardPage() {
       new Date(s.estimated_completion_date) > new Date(Date.now() + 7 * 24 * 3600 * 1000)
   ).length
 
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
+  const sheetUrl = spreadsheetId ? `https://docs.google.com/spreadsheets/d/${spreadsheetId}` : undefined
+
   return (
     <div className="space-y-8">
       <div>
@@ -59,7 +62,7 @@ export default async function AdminDashboardPage() {
         </div>
       </div>
 
-      <MasterTable students={students} />
+      <MasterTable students={students} sheetUrl={sheetUrl} />
     </div>
   )
 }

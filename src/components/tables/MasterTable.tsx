@@ -2,11 +2,12 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
-import { ArrowUpDown, ExternalLink } from 'lucide-react'
+import { ArrowUpDown, ExternalLink, Download } from 'lucide-react'
 import type { StudentProgress } from '@/types'
 
 interface Props {
   students: StudentProgress[]
+  sheetUrl?: string
 }
 
 type SortKey = 'name' | 'program' | 'progress' | 'remaining'
@@ -21,7 +22,7 @@ function formatDate(dateStr: string | null): string {
   })
 }
 
-export function MasterTable({ students }: Props) {
+export function MasterTable({ students, sheetUrl }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [search, setSearch] = useState('')
@@ -62,16 +63,82 @@ export function MasterTable({ students }: Props) {
     return sortDir === 'asc' ? cmp : -cmp
   })
 
+  function exportToCSV() {
+    const headers = [
+      'LAST NAME',
+      'FIRST NAME',
+      'SR-CODE',
+      'EMAIL',
+      'PROGRAM',
+      'REQUIRED OJT HOURS',
+      'RENDERED HOURS',
+      'REMAINING HOURS',
+      'ESTIMATED COMPLETION',
+      'ASSIGNED PROJECT',
+      'GITHUB LINK',
+    ].join(',')
+
+    const rows = sorted.map((s) => {
+      return [
+        `"${(s.last_name || '').replace(/"/g, '""')}"`,
+        `"${(s.first_name || '').replace(/"/g, '""')}"`,
+        `"${(s.sr_code || '').replace(/"/g, '""')}"`,
+        `"${(s.email || '').replace(/"/g, '""')}"`,
+        `"${(s.program || '').replace(/"/g, '""')}"`,
+        s.required_ojt_hours,
+        Number(s.total_rendered_hours).toFixed(1),
+        Number(s.remaining_hours).toFixed(1),
+        s.estimated_completion_date ? `"${s.estimated_completion_date}"` : 'TBD',
+        `"${(s.assigned_project || '').replace(/"/g, '""')}"`,
+        `"${(s.github_link || '').replace(/"/g, '""')}"`,
+      ].join(',')
+    })
+
+    const csvContent = '\uFEFF' + [headers, ...rows].join('\n')
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.setAttribute('href', url)
+    link.setAttribute('download', `DTC_OJT_Students_Report_${new Date().toISOString().split('T')[0]}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   return (
     <div className="space-y-4">
-      {/* Search */}
-      <input
-        type="search"
-        placeholder="Search by name or program…"
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-        className="w-full max-w-sm rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
-      />
+      {/* Actions Bar */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <input
+          type="search"
+          placeholder="Search by name or program…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full max-w-sm rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-sm text-white placeholder-gray-500 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+        />
+
+        <div className="flex flex-wrap items-center gap-3">
+          {sheetUrl && (
+            <a
+              href={sheetUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300 transition"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Open Google Sheet
+            </a>
+          )}
+          <button
+            onClick={exportToCSV}
+            className="inline-flex items-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-sm font-medium text-violet-400 hover:bg-violet-500/20 hover:text-violet-300 transition cursor-pointer"
+          >
+            <Download className="h-4 w-4" />
+            Export to CSV
+          </button>
+        </div>
+      </div>
 
       {/* Table */}
       <div className="overflow-x-auto rounded-xl border border-white/10">

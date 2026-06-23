@@ -9,7 +9,9 @@ ALTER TABLE public.students
   ADD COLUMN IF NOT EXISTS email   TEXT;
 
 -- ── 2. RECREATE STUDENT PROGRESS VIEW ───────────────────────
--- Must recreate to include the new columns
+-- Must drop first because Postgres does not allow changing column structure via CREATE OR REPLACE VIEW
+DROP VIEW IF EXISTS public.student_progress CASCADE;
+
 CREATE OR REPLACE VIEW public.student_progress AS
 SELECT
   s.id,
