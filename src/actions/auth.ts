@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
-import { loginSchema, signupSchema } from '@/lib/validations'
+import { loginSchema, signupSchema, isSrCode } from '@/lib/validations'
 import type { ActionResult } from '@/types'
 
 export async function loginAction(
@@ -11,7 +11,7 @@ export async function loginAction(
   formData: FormData
 ): Promise<ActionResult> {
   const raw = {
-    email: formData.get('email') as string,
+    identifier: formData.get('identifier') as string,
     password: formData.get('password') as string,
   }
 
@@ -20,8 +20,28 @@ export async function loginAction(
     return { success: false, error: parsed.error.issues[0].message }
   }
 
+  let email = parsed.data.identifier.trim()
+
+  // If the identifier looks like an SR-Code, resolve it to an email
+  if (isSrCode(email)) {
+    const serviceClient = await createServiceClient()
+    const { data: student } = await serviceClient
+      .from('students')
+      .select('email')
+      .eq('sr_code', email)
+      .single()
+
+    if (!student?.email) {
+      return { success: false, error: 'No account found with that SR-Code.' }
+    }
+    email = student.email
+  }
+
   const supabase = await createClient()
-  const { error } = await supabase.auth.signInWithPassword(parsed.data)
+  const { error } = await supabase.auth.signInWithPassword({
+    email,
+    password: parsed.data.password,
+  })
 
   if (error) {
     return { success: false, error: error.message }
@@ -38,6 +58,7 @@ export async function signupAction(
   const raw = {
     email: formData.get('email') as string,
     password: formData.get('password') as string,
+    sr_code: formData.get('sr_code') as string,
     first_name: formData.get('first_name') as string,
     last_name: formData.get('last_name') as string,
     program: formData.get('program') as string,
@@ -61,12 +82,26 @@ export async function signupAction(
     return { success: false, error: authError?.message ?? 'Signup failed' }
   }
 
-  // Use service role to bypass RLS since the user does not have a profile yet and students table insert is admin-only.
+  // Use service role to bypass RLS for profile insert
   const serviceClient = await createServiceClient()
+
+  // Check if SR-Code is already taken
+  const { data: existingSr } = await serviceClient
+    .from('students')
+    .select('id')
+    .eq('sr_code', parsed.data.sr_code)
+    .maybeSingle()
+
+  if (existingSr) {
+    return { success: false, error: 'This SR-Code is already registered.' }
+  }
+
   const { error: profileError } = await serviceClient.from('students').insert({
     auth_user_id: authData.user.id,
     first_name: parsed.data.first_name,
     last_name: parsed.data.last_name,
+    sr_code: parsed.data.sr_code,
+    email: parsed.data.email,
     program: parsed.data.program,
     required_ojt_hours: parsed.data.required_ojt_hours,
     role: 'student',

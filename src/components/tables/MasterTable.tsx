@@ -40,7 +40,9 @@ export function MasterTable({ students }: Props) {
     return (
       s.last_name.toLowerCase().includes(q) ||
       s.first_name.toLowerCase().includes(q) ||
-      s.program.toLowerCase().includes(q)
+      s.program.toLowerCase().includes(q) ||
+      (s.sr_code && s.sr_code.toLowerCase().includes(q)) ||
+      (s.email && s.email.toLowerCase().includes(q))
     )
   })
 
@@ -77,6 +79,8 @@ export function MasterTable({ students }: Props) {
           <thead>
             <tr className="border-b border-white/10 bg-white/5">
               <SortHeader label="Name" sortKey="name" current={sortKey} dir={sortDir} onSort={handleSort} />
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">SR-Code</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Email</th>
               <SortHeader label="Program" sortKey="program" current={sortKey} dir={sortDir} onSort={handleSort} />
               <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500">Required</th>
               <SortHeader label="Progress" sortKey="progress" current={sortKey} dir={sortDir} onSort={handleSort} />
@@ -89,7 +93,7 @@ export function MasterTable({ students }: Props) {
           <tbody className="divide-y divide-white/5">
             {sorted.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-4 py-10 text-center text-gray-500">
+                <td colSpan={10} className="px-4 py-10 text-center text-gray-500">
                   No interns found.
                 </td>
               </tr>
@@ -109,6 +113,8 @@ export function MasterTable({ students }: Props) {
                       {s.last_name}, {s.first_name}
                     </span>
                   </td>
+                  <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{s.sr_code || '—'}</td>
+                  <td className="px-4 py-3 text-gray-400 whitespace-nowrap">{s.email || '—'}</td>
                   <td className="px-4 py-3 text-gray-400">{s.program}</td>
                   <td className="px-4 py-3 text-gray-400">{s.required_ojt_hours}h</td>
                   <td className="px-4 py-3">

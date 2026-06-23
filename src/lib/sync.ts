@@ -24,12 +24,22 @@ function formatTime(timeStr: string | null): string {
 }
 
 /**
- * Sanitizes a student name for use as a Google Sheet tab name.
+ * Returns the short day name (e.g. Mon, Tue) from a YYYY-MM-DD string
+ */
+function getDayName(dateStr: string): string {
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(Date.UTC(y, m - 1, d))
+  return date.toLocaleDateString('en-US', { weekday: 'short', timeZone: 'UTC' })
+}
+
+/**
+ * Sanitizes a student name for use as a Google Sheet tab name in ALL CAPS.
  * Sheet names cannot exceed 100 chars or contain: \ / ? * [ ]
  */
 function toSheetTabName(lastName: string, firstName: string): string {
   return `${lastName}, ${firstName}`
     .replace(/[\\/?*[\]]/g, '')
+    .toUpperCase()
     .substring(0, 100)
 }
 
@@ -63,21 +73,29 @@ async function ensureSheetTab(
 }
 
 /**
- * Finds the row index (1-based) of a student in the Master sheet by student ID.
- * Assumes column A holds student UUIDs (hidden but reliable key).
+ * Finds the row index (1-based) of a student in the Master sheet by matching Last Name and First Name (both case-insensitive/uppercase).
  * Returns -1 if not found.
  */
 async function findMasterRow(
   sheets: ReturnType<typeof getSheetsClient>,
-  studentId: string
+  lastName: string,
+  firstName: string
 ): Promise<number> {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${MASTER_SHEET_NAME}!A:A`,
+    range: `${MASTER_SHEET_NAME}!A:B`,
   })
   const rows = res.data.values ?? []
-  for (let i = 0; i < rows.length; i++) {
-    if (rows[i][0] === studentId) return i + 1 // 1-based
+  const targetLast = lastName.trim().toUpperCase()
+  const targetFirst = firstName.trim().toUpperCase()
+
+  // Skip row 1 (assumed header row)
+  for (let i = 1; i < rows.length; i++) {
+    const rowLast = (rows[i][0] || '').trim().toUpperCase()
+    const rowFirst = (rows[i][1] || '').trim().toUpperCase()
+    if (rowLast === targetLast && rowFirst === targetFirst) {
+      return i + 1 // 1-based
+    }
   }
   return -1
 }
@@ -90,98 +108,162 @@ async function findMasterRow(
  * This is intentionally idempotent — safe to call multiple times.
  */
 export async function syncStudentToSheets(studentId: string): Promise<void> {
-  const supabase = await createServiceClient()
-  const sheets = getSheetsClient()
+  // ── 0. Environment Guard ──────────────────────────────────
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
+  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
 
-  // ── 1. Fetch student progress ─────────────────────────────
-  const { data: progress, error: progressError } = await supabase
-    .from('student_progress')
-    .select('*')
-    .eq('id', studentId)
-    .single<StudentProgress>()
-
-  if (progressError || !progress) {
-    console.error('[sync] Failed to fetch student progress:', progressError)
+  if (!spreadsheetId || !clientEmail || !privateKey || privateKey.includes('placeholder')) {
+    console.warn('[sync] Missing or placeholder Google Sheets credentials. Skipping sync.')
     return
   }
 
-  // ── 2. Fetch attendance logs ──────────────────────────────
-  const { data: logs, error: logsError } = await supabase
-    .from('attendance_logs')
-    .select('*')
-    .eq('student_id', studentId)
-    .order('date', { ascending: true })
+  try {
+    const supabase = await createServiceClient()
+    const sheets = getSheetsClient()
 
-  if (logsError) {
-    console.error('[sync] Failed to fetch attendance logs:', logsError)
-    return
-  }
+    // ── 1. Fetch student progress ─────────────────────────────
+    const { data: progress, error: progressError } = await supabase
+      .from('student_progress')
+      .select('*')
+      .eq('id', studentId)
+      .single<StudentProgress>()
 
-  // ── 3. Update Master Sheet ────────────────────────────────
-  const masterRow: (string | number)[] = [
-    progress.id,                                          // col A — hidden ID key
-    progress.last_name,                                   // col B
-    progress.first_name,                                  // col C
-    progress.program,                                     // col D
-    progress.required_ojt_hours,                          // col E
-    progress.remaining_hours,                             // col F
-    formatDate(progress.estimated_completion_date),       // col G
-    '',                                                   // col H — actual completion (manual)
-    progress.assigned_project ?? '',                      // col I
-    progress.github_link ?? '',                           // col J
-  ]
+    if (progressError || !progress) {
+      console.error('[sync] Failed to fetch student progress:', progressError)
+      return
+    }
 
-  let rowIndex = await findMasterRow(sheets, studentId)
+    // ── 2. Fetch attendance logs ──────────────────────────────
+    const { data: logs, error: logsError } = await supabase
+      .from('attendance_logs')
+      .select('*')
+      .eq('student_id', studentId)
+      .order('date', { ascending: true })
 
-  if (rowIndex === -1) {
-    // Student not yet in master sheet — append a new row
-    await sheets.spreadsheets.values.append({
+    if (logsError) {
+      console.error('[sync] Failed to fetch attendance logs:', logsError)
+      return
+    }
+
+    const tabName = toSheetTabName(progress.last_name, progress.first_name)
+
+    // ── 3. Update Master Sheet ────────────────────────────────
+    // Get all rows to see count and handle empty sheet/target row
+    const lastRes = await sheets.spreadsheets.values.get({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${MASTER_SHEET_NAME}!A:J`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [masterRow] },
+      range: `${MASTER_SHEET_NAME}!A:A`,
     })
-  } else {
-    // Update existing row
+    const currentRows = lastRes.data.values ?? []
+
+    // If completely empty, write headers first
+    if (currentRows.length === 0) {
+      const headers = [
+        'LAST NAME',
+        'FIRST NAME',
+        'SR-CODE',
+        'EMAIL',
+        'PROGRAM',
+        'REQUIRED OJT HOURS',
+        'REMAINING HOURS',
+        'ESTIMATED COMPLETION',
+        'ACTUAL COMPLETION',
+        'ASSIGNED PROJECT',
+        'GITHUB LINK',
+      ]
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${MASTER_SHEET_NAME}!A1:K1`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [headers] },
+      })
+      currentRows.push(['LAST NAME'])
+    }
+
+    let rowIndex = await findMasterRow(sheets, progress.last_name, progress.first_name)
+    let targetRow = rowIndex
+    let existingActualCompletion = ''
+
+    if (rowIndex === -1) {
+      targetRow = currentRows.length + 1
+    } else {
+      // Fetch existing actual completion (column I is index 8)
+      const getRes = await sheets.spreadsheets.values.get({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${MASTER_SHEET_NAME}!A${rowIndex}:K${rowIndex}`,
+      })
+      existingActualCompletion = getRes.data.values?.[0]?.[8] || ''
+    }
+
+    const masterRow: (string | number)[] = [
+      progress.last_name.toUpperCase(),                               // col A: LAST NAME
+      progress.first_name.toUpperCase(),                              // col B: FIRST NAME
+      progress.sr_code ?? '',                                         // col C: SR-CODE
+      progress.email ?? '',                                           // col D: EMAIL
+      progress.program.toUpperCase(),                                 // col E: PROGRAM
+      progress.required_ojt_hours,                                    // col F: REQUIRED OJT HOURS
+      `=F${targetRow}-SUM('${tabName}'!E2:E1000) & " hours"`,          // col G: REMAINING HOURS (formula)
+      formatDate(progress.estimated_completion_date),                 // col H: ESTIMATED COMPLETION
+      existingActualCompletion,                                       // col I: ACTUAL COMPLETION
+      progress.assigned_project?.toUpperCase() ?? '',                 // col J: ASSIGNED PROJECT
+      progress.github_link ?? '',                                     // col K: GITHUB LINK
+    ]
+
     await sheets.spreadsheets.values.update({
       spreadsheetId: SPREADSHEET_ID,
-      range: `${MASTER_SHEET_NAME}!A${rowIndex}:J${rowIndex}`,
+      range: `${MASTER_SHEET_NAME}!A${targetRow}:K${targetRow}`,
       valueInputOption: 'USER_ENTERED',
       requestBody: { values: [masterRow] },
     })
-  }
 
-  // ── 4. Update individual attendance tab ───────────────────
-  const tabName = toSheetTabName(progress.last_name, progress.first_name)
-  await ensureSheetTab(sheets, tabName)
+    // ── 4. Update individual attendance tab ───────────────────
+    await ensureSheetTab(sheets, tabName)
 
-  // Header row + data rows
-  const headerRow = [
-    'Date', 'Time In', 'Time Out',
-    'Total Hours', 'Planned Task / Activities', 'Actual Accomplishment',
-  ]
-
-  const attendanceRows: (string | number | null)[][] = (logs ?? []).map(
-    (log: AttendanceLog) => [
-      formatDate(log.date),
-      formatTime(log.time_in),
-      formatTime(log.time_out),
-      log.total_hours ?? '',
-      log.planned_task ?? '',
-      log.actual_accomplishment ?? '',
+    // Header row + data rows
+    const headerRow = [
+      'DATE',
+      'DAY',
+      'TIME IN',
+      'TIME OUT',
+      'NO. OF HOURS',
+      'PLANNED TASK / ACTIVITIES',
+      'ACTUAL ACCOMPLISHMENT',
     ]
-  )
 
-  const allRows = [headerRow, ...attendanceRows]
+    const attendanceRows: (string | number | null)[][] = (logs ?? []).map(
+      (log: AttendanceLog) => [
+        formatDate(log.date),
+        getDayName(log.date),
+        formatTime(log.time_in),
+        formatTime(log.time_out),
+        log.total_hours != null ? Number(log.total_hours) : '', // raw number for SUM() formula
+        log.planned_task ?? '',
+        log.actual_accomplishment ?? '',
+      ]
+    )
 
-  await sheets.spreadsheets.values.update({
-    spreadsheetId: SPREADSHEET_ID,
-    range: `'${tabName}'!A1:F${allRows.length}`,
-    valueInputOption: 'USER_ENTERED',
-    requestBody: { values: allRows },
-  })
+    const allRows = [headerRow, ...attendanceRows]
 
-  console.log(`[sync] ✅ Synced ${progress.last_name}, ${progress.first_name} to Sheets`)
+    await sheets.spreadsheets.values.update({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${tabName}'!A1:G${allRows.length}`,
+      valueInputOption: 'USER_ENTERED',
+      requestBody: { values: allRows },
+    })
+
+    // Clear any trailing/ghost rows down to 1000 to prevent stale data double-counting
+    const startClearRow = allRows.length + 1
+    if (startClearRow <= 1000) {
+      await sheets.spreadsheets.values.clear({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `'${tabName}'!A${startClearRow}:G1000`,
+      })
+    }
+
+    console.log(`[sync] ✅ Synced ${progress.last_name}, ${progress.first_name} to Sheets`)
+  } catch (error) {
+    console.error(`[sync] ❌ Error syncing student ${studentId} to sheets:`, error)
+  }
 }
 
 /**
@@ -189,21 +271,35 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
  * Used by the cron job as a fallback.
  */
 export async function syncAllStudentsToSheets(): Promise<void> {
-  const supabase = await createServiceClient()
+  // ── Environment Guard ──────────────────────────────────
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
+  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
 
-  const { data: students, error } = await supabase
-    .from('students')
-    .select('id')
-    .eq('role', 'student')
-
-  if (error || !students) {
-    console.error('[sync] Failed to fetch students for full sync:', error)
+  if (!spreadsheetId || !clientEmail || !privateKey || privateKey.includes('placeholder')) {
+    console.warn('[sync] Missing or placeholder Google Sheets credentials. Skipping full sync.')
     return
   }
 
-  for (const student of students) {
-    await syncStudentToSheets(student.id)
-  }
+  try {
+    const supabase = await createServiceClient()
 
-  console.log(`[sync] ✅ Full reconciliation complete — synced ${students.length} students`)
+    const { data: students, error } = await supabase
+      .from('students')
+      .select('id')
+      .eq('role', 'student')
+
+    if (error || !students) {
+      console.error('[sync] Failed to fetch students for full sync:', error)
+      return
+    }
+
+    for (const student of students) {
+      await syncStudentToSheets(student.id)
+    }
+
+    console.log(`[sync] ✅ Full reconciliation complete — synced ${students.length} students`)
+  } catch (error) {
+    console.error('[sync] ❌ Error during full reconciliation:', error)
+  }
 }

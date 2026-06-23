@@ -12,17 +12,17 @@ export function LoginForm() {
   return (
     <form action={formAction} className="space-y-4">
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">
-          Email
+        <label htmlFor="identifier" className="block text-sm font-medium text-gray-300 mb-1.5">
+          Email or SR-Code
         </label>
         <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
+          id="identifier"
+          name="identifier"
+          type="text"
+          autoComplete="username"
           required
           className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
-          placeholder="you@example.com"
+          placeholder="you@g.batstate-u.edu.ph or 23-06643"
         />
       </div>
 

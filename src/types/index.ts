@@ -5,6 +5,8 @@ export interface Student {
   auth_user_id: string
   last_name: string
   first_name: string
+  sr_code: string | null
+  email: string | null
   program: string
   required_ojt_hours: number
   assigned_project: string | null
@@ -32,6 +34,8 @@ export interface StudentProgress {
   auth_user_id: string
   last_name: string
   first_name: string
+  sr_code: string | null
+  email: string | null
   program: string
   required_ojt_hours: number
   assigned_project: string | null
@@ -56,6 +60,7 @@ export interface AttendanceLogFormValues {
 export interface StudentProfileFormValues {
   first_name: string
   last_name: string
+  sr_code: string
   program: string
   required_ojt_hours: number
   assigned_project: string

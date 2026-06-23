@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useActionState, useTransition, useEffect } from 'react'
+import { useState, useActionState, useTransition, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, X, Check } from 'lucide-react'
 import { createAttendanceLog, updateAttendanceLog, deleteAttendanceLog } from '@/actions/attendance'
@@ -53,18 +53,24 @@ function AttendanceForm({
     emptyState
   )
 
+  const lastProcessedRef = useRef<ActionResult>(emptyState)
+
   // If success, bubble up
   useEffect(() => {
+    if (state === lastProcessedRef.current) return
     if (state.success && state.data) {
+      lastProcessedRef.current = state
       onSuccess(state.data as AttendanceLog)
     }
-  }, [state.success, state.data, onSuccess])
+  }, [state, onSuccess])
 
   useEffect(() => {
+    if (state === lastProcessedRef.current) return
     if (state.error) {
+      lastProcessedRef.current = state
       toast.error(state.error)
     }
-  }, [state.error])
+  }, [state])
 
   return (
     <form
@@ -175,6 +181,9 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
   }
 
   function handleDelete(logId: string) {
+    if (typeof window !== 'undefined' && !window.confirm('Are you sure you want to delete this attendance log entry?')) {
+      return
+    }
     startTransition(async () => {
       const result = await deleteAttendanceLog(logId)
       if (result.success) {
