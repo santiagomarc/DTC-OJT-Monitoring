@@ -96,7 +96,7 @@ export async function signupAction(
     return { success: false, error: 'This SR-Code is already registered.' }
   }
 
-  const { error: profileError } = await serviceClient.from('students').insert({
+  const { data: studentData, error: profileError } = await serviceClient.from('students').insert({
     auth_user_id: authData.user.id,
     first_name: parsed.data.first_name,
     last_name: parsed.data.last_name,
@@ -105,10 +105,17 @@ export async function signupAction(
     program: parsed.data.program,
     required_ojt_hours: parsed.data.required_ojt_hours,
     role: 'student',
-  })
+  }).select('id').single()
 
-  if (profileError) {
-    return { success: false, error: profileError.message }
+  if (profileError || !studentData) {
+    return { success: false, error: profileError?.message ?? 'Failed to create profile' }
+  }
+
+  try {
+    const { syncStudentToSheets } = await import('@/lib/sync')
+    await syncStudentToSheets(studentData.id)
+  } catch (err) {
+    console.error('Failed to sync new student to sheets:', err)
   }
 
   revalidatePath('/', 'layout')

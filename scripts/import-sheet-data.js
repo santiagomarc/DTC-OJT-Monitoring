@@ -3,6 +3,9 @@ const { google } = require('googleapis')
 const fs = require('fs')
 const path = require('path')
 
+// Stub WebSocket globally to prevent initialization error in Node.js < 22 when using @supabase/supabase-js
+global.WebSocket = class {}
+
 // ── 1. LOAD ENV VARIABLES ────────────────────────────────────
 const envPath = path.join(__dirname, '../.env.local')
 if (!fs.existsSync(envPath)) {
@@ -53,29 +56,43 @@ const auth = new google.auth.JWT({
 })
 const sheets = google.sheets({ version: 'v4', auth })
 
-// Helper to clean and convert DATE (MM/DD/YYYY or YYYY-MM-DD) → YYYY-MM-DD
+// Helper to clean and convert DATE (MM/DD/YYYY, MM-DD-YY, or YYYY-MM-DD) → YYYY-MM-DD
 function parseDate(val) {
   if (!val) return null
   const str = val.trim()
+  
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
 
-  // Match MM/DD/YYYY or M/D/YYYY
-  const md = str.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/)
+  // Match MM-DD-YY, MM/DD/YY, M/D/YYYY, etc.
+  const md = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{2,4})$/)
   if (md) {
     const m = md[1].padStart(2, '0')
     const d = md[2].padStart(2, '0')
-    const y = md[3]
+    let y = md[3]
+    if (y.length === 2) {
+      y = '20' + y
+    }
     return `${y}-${m}-${d}`
   }
+
+  // Fallback to JS Date parsing
+  const parsed = new Date(str)
+  if (!isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear()
+    const m = (parsed.getMonth() + 1).toString().padStart(2, '0')
+    const d = parsed.getDate().toString().padStart(2, '0')
+    return `${y}-${m}-${d}`
+  }
+
   return null
 }
 
-// Helper to convert time string (e.g. "8:00 AM", "17:30", "5:00 PM") → HH:MM:00
+// Helper to convert time string (e.g. "8:00 AM", "8:00:00 AM", "17:30", "5:00 PM") → HH:MM:00
 function parseTime(val) {
   if (!val) return null
   const str = val.trim().toUpperCase()
 
-  // Match HH:MM
+  // Match HH:MM or HH:MM:SS (24-hour)
   const match24 = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?$/)
   if (match24) {
     const h = match24[1].padStart(2, '0')
@@ -83,8 +100,8 @@ function parseTime(val) {
     return `${h}:${m}:00`
   }
 
-  // Match H:MM AM/PM
-  const match12 = str.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/)
+  // Match H:MM AM/PM or H:MM:SS AM/PM
+  const match12 = str.match(/^(\d{1,2}):(\d{2})(?::\d{2})?\s*(AM|PM)$/)
   if (match12) {
     let h = parseInt(match12[1], 10)
     const m = match12[2]
@@ -263,15 +280,22 @@ async function run() {
 
       // ── Import Attendance Logs ──────────────────────────────────
       // Search for the matching tab title in the spreadsheet
-      const expectedTabNames = [
-        `${student.lastName}, ${student.firstName}`.toUpperCase(),
-        `${student.lastName}, ${student.firstName}`,
-        `${student.firstName} ${student.lastName}`
-      ]
+      const normalize = (str) => str.toUpperCase().replace(/[^A-Z0-9]/g, '')
+      const normalizedTabTarget = normalize(`${student.lastName}${student.firstName}`)
 
       let matchedTabName = null
       for (const title of sheetTitles) {
-        if (expectedTabNames.includes(title.toUpperCase()) || expectedTabNames.includes(title)) {
+        // Skip template and master tabs
+        if (
+          title.toUpperCase().includes('TEMPLATE') ||
+          title.toUpperCase().includes('LASTNAME') ||
+          title.toLowerCase() === 'master'
+        ) {
+          continue
+        }
+
+        const normalizedTitle = normalize(title)
+        if (normalizedTitle.startsWith(normalizedTabTarget) || normalizedTabTarget.startsWith(normalizedTitle)) {
           matchedTabName = title
           break
         }
