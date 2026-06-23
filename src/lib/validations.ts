@@ -12,8 +12,8 @@ export const signupSchema = z.object({
   last_name: z.string().min(1, 'Last name is required').max(100),
   program: z.string().min(1, 'Program is required'),
   required_ojt_hours: z
-    .number({ invalid_type_error: 'Must be a number' })
-    .min(1)
+    .number()
+    .min(1, 'Must be at least 1 hour')
     .max(2000)
     .default(486),
 })

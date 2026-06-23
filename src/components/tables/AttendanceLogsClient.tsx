@@ -44,8 +44,8 @@ function AttendanceForm({
   const isEdit = !!logId
 
   const boundAction = isEdit
-    ? updateAttendanceLog.bind(null, logId!, emptyState)
-    : createAttendanceLog.bind(null, emptyState)
+    ? updateAttendanceLog.bind(null, logId!)
+    : createAttendanceLog
 
   const [state, formAction, isPending] = useActionState(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any

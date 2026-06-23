@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { loginSchema, signupSchema } from '@/lib/validations'
 import type { ActionResult } from '@/types'
 
@@ -61,8 +61,9 @@ export async function signupAction(
     return { success: false, error: authError?.message ?? 'Signup failed' }
   }
 
-  // Create the student profile
-  const { error: profileError } = await supabase.from('students').insert({
+  // Use service role to bypass RLS since the user does not have a profile yet and students table insert is admin-only.
+  const serviceClient = await createServiceClient()
+  const { error: profileError } = await serviceClient.from('students').insert({
     auth_user_id: authData.user.id,
     first_name: parsed.data.first_name,
     last_name: parsed.data.last_name,
