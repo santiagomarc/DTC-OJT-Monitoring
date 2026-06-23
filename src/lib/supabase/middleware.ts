@@ -32,7 +32,7 @@ export async function updateSession(request: NextRequest) {
 
   // Public routes — always accessible
   const publicPaths = ['/login', '/signup', '/']
-  if (publicPaths.includes(pathname)) {
+  if (publicPaths.includes(pathname) || pathname.startsWith('/api/')) {
     return supabaseResponse
   }
 

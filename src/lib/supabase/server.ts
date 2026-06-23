@@ -31,7 +31,12 @@ export async function createClient() {
  * NEVER expose this to the browser.
  */
 export async function createServiceClient() {
-  const cookieStore = await cookies()
+  let cookieStore: Awaited<ReturnType<typeof cookies>> | undefined;
+  try {
+    cookieStore = await cookies()
+  } catch {
+    // cookies() called outside a request scope
+  }
 
   return createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -39,9 +44,10 @@ export async function createServiceClient() {
     {
       cookies: {
         getAll() {
-          return cookieStore.getAll()
+          return cookieStore ? cookieStore.getAll() : []
         },
         setAll(cookiesToSet) {
+          if (!cookieStore) return
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
               cookieStore.set(name, value, options)

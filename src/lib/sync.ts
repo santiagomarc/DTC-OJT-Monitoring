@@ -210,7 +210,49 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
     let existingActualCompletion = ''
 
     if (rowIndex === -1) {
-      targetRow = currentRows.length + 1
+      // Append a placeholder row first to let Google Sheets find the correct empty row
+      const appendRes = await sheets.spreadsheets.values.append({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${MASTER_SHEET_NAME}!A:K`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: {
+          values: [[
+            progress.last_name.toUpperCase(),                               // col A: LAST NAME
+            progress.first_name.toUpperCase(),                              // col B: FIRST NAME
+            progress.sr_code ?? '',                                         // col C: SR-CODE
+            progress.email ?? '',                                           // col D: EMAIL
+            progress.program.toUpperCase(),                                 // col E: PROGRAM
+            progress.required_ojt_hours,                                    // col F: REQUIRED OJT HOURS
+            '',                                                             // col G: REMAINING HOURS (formula placeholder)
+            formatDate(progress.estimated_completion_date),                 // col H: ESTIMATED COMPLETION
+            '',                                                             // col I: ACTUAL COMPLETION
+            progress.assigned_project?.toUpperCase() ?? '',                 // col J: ASSIGNED PROJECT
+            progress.github_link ?? '',                                     // col K: GITHUB LINK
+          ]]
+        }
+      })
+
+      const updatedRange = appendRes.data.updates?.updatedRange || ''
+      const rowMatch = updatedRange.match(/A(\d+):/)
+      if (rowMatch) {
+        targetRow = parseInt(rowMatch[1], 10)
+      } else {
+        const lastNumMatch = updatedRange.match(/\d+$/)
+        if (lastNumMatch) {
+          targetRow = parseInt(lastNumMatch[0], 10)
+        } else {
+          targetRow = currentRows.length + 1
+        }
+      }
+
+      // Now insert the correct formula matching the newly generated row number
+      const formula = `=F${targetRow}-SUM('${tabName}'!E2:E1000) & " hours"`
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${MASTER_SHEET_NAME}!G${targetRow}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [[formula]] }
+      })
     } else {
       // Fetch existing actual completion (column I is index 8)
       const getRes = await sheets.spreadsheets.values.get({
@@ -218,28 +260,28 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
         range: `${MASTER_SHEET_NAME}!A${rowIndex}:K${rowIndex}`,
       })
       existingActualCompletion = getRes.data.values?.[0]?.[8] || ''
+
+      const masterRow: (string | number)[] = [
+        progress.last_name.toUpperCase(),                               // col A: LAST NAME
+        progress.first_name.toUpperCase(),                              // col B: FIRST NAME
+        progress.sr_code ?? '',                                         // col C: SR-CODE
+        progress.email ?? '',                                           // col D: EMAIL
+        progress.program.toUpperCase(),                                 // col E: PROGRAM
+        progress.required_ojt_hours,                                    // col F: REQUIRED OJT HOURS
+        `=F${targetRow}-SUM('${tabName}'!E2:E1000) & " hours"`,          // col G: REMAINING HOURS (formula)
+        formatDate(progress.estimated_completion_date),                 // col H: ESTIMATED COMPLETION
+        existingActualCompletion,                                       // col I: ACTUAL COMPLETION
+        progress.assigned_project?.toUpperCase() ?? '',                 // col J: ASSIGNED PROJECT
+        progress.github_link ?? '',                                     // col K: GITHUB LINK
+      ]
+
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `${MASTER_SHEET_NAME}!A${targetRow}:K${targetRow}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: [masterRow] },
+      })
     }
-
-    const masterRow: (string | number)[] = [
-      progress.last_name.toUpperCase(),                               // col A: LAST NAME
-      progress.first_name.toUpperCase(),                              // col B: FIRST NAME
-      progress.sr_code ?? '',                                         // col C: SR-CODE
-      progress.email ?? '',                                           // col D: EMAIL
-      progress.program.toUpperCase(),                                 // col E: PROGRAM
-      progress.required_ojt_hours,                                    // col F: REQUIRED OJT HOURS
-      `=F${targetRow}-SUM('${tabName}'!E2:E1000) & " hours"`,          // col G: REMAINING HOURS (formula)
-      formatDate(progress.estimated_completion_date),                 // col H: ESTIMATED COMPLETION
-      existingActualCompletion,                                       // col I: ACTUAL COMPLETION
-      progress.assigned_project?.toUpperCase() ?? '',                 // col J: ASSIGNED PROJECT
-      progress.github_link ?? '',                                     // col K: GITHUB LINK
-    ]
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `${MASTER_SHEET_NAME}!A${targetRow}:K${targetRow}`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: [masterRow] },
-    })
 
     // ── 4. Update individual attendance tab ───────────────────
     await ensureSheetTab(sheets, tabName)
