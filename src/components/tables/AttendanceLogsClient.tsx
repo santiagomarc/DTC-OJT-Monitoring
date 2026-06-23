@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useActionState, useTransition } from 'react'
+import { useState, useActionState, useTransition, useEffect } from 'react'
 import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, X, Check } from 'lucide-react'
 import { createAttendanceLog, updateAttendanceLog, deleteAttendanceLog } from '@/actions/attendance'
@@ -54,10 +54,17 @@ function AttendanceForm({
   )
 
   // If success, bubble up
-  if (state.success && state.data) {
-    onSuccess(state.data as AttendanceLog)
-  }
-  if (state.error) toast.error(state.error)
+  useEffect(() => {
+    if (state.success && state.data) {
+      onSuccess(state.data as AttendanceLog)
+    }
+  }, [state.success, state.data, onSuccess])
+
+  useEffect(() => {
+    if (state.error) {
+      toast.error(state.error)
+    }
+  }, [state.error])
 
   return (
     <form
