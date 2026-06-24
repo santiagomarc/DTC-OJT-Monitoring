@@ -75,12 +75,12 @@ export async function getStudentProgressById(
 }
 
 const updateProfileSchema = z.object({
-  assigned_project: z.string().max(300).optional().or(z.literal('')),
+  assigned_project: z.string().max(300).optional(),
   github_link: z.string().url('Enter a valid URL').optional().or(z.literal('')),
 })
 
 /**
- * Update the logged-in student's project and GitHub link.
+ * Update the logged-in student's project and/or GitHub link.
  */
 export async function updateStudentProfileAction(
   formData: FormData
@@ -90,9 +90,12 @@ export async function updateStudentProfileAction(
     return { error: 'Unauthorized' }
   }
 
-  const rawData = {
-    assigned_project: (formData.get('assigned_project') as string) || '',
-    github_link: (formData.get('github_link') as string) || '',
+  const rawData: any = {}
+  if (formData.has('assigned_project')) {
+    rawData.assigned_project = (formData.get('assigned_project') as string) || ''
+  }
+  if (formData.has('github_link')) {
+    rawData.github_link = (formData.get('github_link') as string) || ''
   }
 
   const result = updateProfileSchema.safeParse(rawData)
@@ -100,13 +103,18 @@ export async function updateStudentProfileAction(
     return { error: result.error.issues[0].message }
   }
 
+  const updatePayload: any = {}
+  if ('assigned_project' in result.data) {
+    updatePayload.assigned_project = result.data.assigned_project || null
+  }
+  if ('github_link' in result.data) {
+    updatePayload.github_link = result.data.github_link || null
+  }
+
   const supabase = await createClient()
   const { error } = await supabase
     .from('students')
-    .update({
-      assigned_project: result.data.assigned_project || null,
-      github_link: result.data.github_link || null,
-    })
+    .update(updatePayload)
     .eq('id', profile.id)
 
   if (error) return { error: error.message }
