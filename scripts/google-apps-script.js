@@ -32,7 +32,7 @@
 // =========================================================================
 
 // ── CONFIGURATION ─────────────────────────────────────────────────────────
-var WEBHOOK_URL = 'https://YOUR_VERCEL_APP.vercel.app/api/webhooks/sheets'
+var WEBHOOK_URL = 'https://dtc-ojt-monitoring.vercel.app/api/webhooks/sheets'
 //                 ↑ Replace with your actual deployed URL before installing the trigger.
 //                   For local dev with ngrok: 'https://xxxx.ngrok-free.app/api/webhooks/sheets'
 
