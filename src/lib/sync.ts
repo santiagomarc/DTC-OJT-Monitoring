@@ -134,9 +134,9 @@ async function findMasterRow(
  */
 export async function syncStudentToSheets(studentId: string): Promise<void> {
   // ── 0. Environment Guard ──────────────────────────────────
-  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
-  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID?.trim()
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim()
+  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.trim()
 
   if (!spreadsheetId || !clientEmail || !privateKey || privateKey.includes('placeholder')) {
     console.warn('[sync] Missing or placeholder Google Sheets credentials. Skipping sync.')
@@ -369,9 +369,9 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
  */
 export async function syncAllStudentsToSheets(): Promise<void> {
   // ── Environment Guard ──────────────────────────────────
-  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
-  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL
-  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY
+  const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID?.trim()
+  const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim()
+  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.trim()
 
   if (!spreadsheetId || !clientEmail || !privateKey || privateKey.includes('placeholder')) {
     console.warn('[sync] Missing or placeholder Google Sheets credentials. Skipping full sync.')

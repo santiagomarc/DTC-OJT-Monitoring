@@ -5,13 +5,12 @@ import { google } from 'googleapis'
  * Credentials are loaded from environment variables — never from a file.
  */
 export function getSheetsClient() {
-  const privateKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.replace(
-    /\\n/g,
-    '\n'
-  )
+  const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_PRIVATE_KEY?.trim()
+  const privateKey = rawKey?.replace(/\\n/g, '\n')
+  const email = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim()
 
   const auth = new google.auth.JWT({
-    email: process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL,
+    email,
     key: privateKey,
     scopes: ['https://www.googleapis.com/auth/spreadsheets'],
   })
@@ -19,5 +18,6 @@ export function getSheetsClient() {
   return google.sheets({ version: 'v4', auth })
 }
 
-export const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_SPREADSHEET_ID!
+export const SPREADSHEET_ID = process.env.GOOGLE_SHEETS_SPREADSHEET_ID?.trim()!
 export const MASTER_SHEET_NAME = 'Master'
+
