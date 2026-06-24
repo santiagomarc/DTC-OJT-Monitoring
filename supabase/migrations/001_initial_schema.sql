@@ -61,6 +61,8 @@ SELECT
   s.auth_user_id,
   s.last_name,
   s.first_name,
+  s.sr_code,
+  s.email,
   s.program,
   s.required_ojt_hours,
   s.assigned_project,
