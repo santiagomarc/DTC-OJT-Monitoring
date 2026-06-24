@@ -30,7 +30,18 @@ CREATE TABLE IF NOT EXISTS public.attendance_logs (
     CASE
       WHEN time_out IS NOT NULL
       THEN ROUND(
-        CAST(EXTRACT(EPOCH FROM (time_out - time_in)) / 3600.0 AS NUMERIC),
+        CAST(
+          (
+            EXTRACT(EPOCH FROM (time_out - time_in))
+            -
+            GREATEST(
+              0,
+              EXTRACT(EPOCH FROM (
+                LEAST(time_out, '13:00'::time) - GREATEST(time_in, '12:00'::time)
+              ))
+            )
+          ) / 3600.0 
+        AS NUMERIC),
         2
       )
       ELSE NULL
@@ -62,8 +73,10 @@ SELECT
   CASE
     WHEN COUNT(a.id) > 0 AND AVG(a.total_hours) > 0
     THEN CURRENT_DATE + CEIL(
-      (s.required_ojt_hours - COALESCE(SUM(a.total_hours), 0)) /
-      AVG(a.total_hours)
+      (
+        (s.required_ojt_hours - COALESCE(SUM(a.total_hours), 0)) /
+        AVG(a.total_hours)
+      ) * (7.0 / 4.0)
     )::INT
     ELSE NULL
   END                                                           AS estimated_completion_date,
