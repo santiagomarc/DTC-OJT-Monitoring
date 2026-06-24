@@ -8,6 +8,7 @@ import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { EditInternDialog } from '@/components/dialogs/EditInternDialog'
 import { ManualLogDialog } from '@/components/dialogs/ManualLogDialog'
+import { DeleteInternDialog } from '@/components/dialogs/DeleteInternDialog'
 
 interface Props {
   params: Promise<{ studentId: string }>
@@ -57,14 +58,20 @@ export default async function AdminStudentDetailPage({ params }: Props) {
               {progress.program} · {progress.required_ojt_hours}h required
             </p>
           </div>
-          <EditInternDialog
-            studentId={studentId}
-            initialData={{
-              required_ojt_hours: progress.required_ojt_hours,
-              assigned_project: progress.assigned_project,
-              github_link: progress.github_link,
-            }}
-          />
+          <div className="flex flex-wrap gap-2">
+            <EditInternDialog
+              studentId={studentId}
+              initialData={{
+                required_ojt_hours: progress.required_ojt_hours,
+                assigned_project: progress.assigned_project,
+                github_link: progress.github_link,
+              }}
+            />
+            <DeleteInternDialog
+              studentId={studentId}
+              lastName={progress.last_name}
+            />
+          </div>
         </div>
       </div>
 

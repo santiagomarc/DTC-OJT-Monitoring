@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getMyProfile } from './students'
-import { syncStudentToSheets } from '@/lib/sync'
+import { syncStudentToSheets, deleteStudentFromSheets } from '@/lib/sync'
 import { z } from 'zod'
 
 const editInternSchema = z.object({
@@ -124,3 +124,57 @@ export async function addManualLogAction(formData: FormData): Promise<{ success?
   revalidatePath(`/dashboard/admin/${result.data.studentId}`)
   return { success: true }
 }
+
+/**
+ * Admin: delete an intern profile, cascade logs, delete auth user, and clean up Google Sheet.
+ */
+export async function deleteInternAction(studentId: string): Promise<{ success?: boolean; error?: string }> {
+  const profile = await getMyProfile()
+  if (!profile || profile.role !== 'admin') {
+    return { error: 'Unauthorized' }
+  }
+
+  // 1. Fetch student info before deletion
+  const serviceClient = await createServiceClient()
+  const { data: student, error: fetchError } = await serviceClient
+    .from('students')
+    .select('first_name, last_name, auth_user_id')
+    .eq('id', studentId)
+    .maybeSingle()
+
+  if (fetchError || !student) {
+    return { error: fetchError?.message || 'Student not found' }
+  }
+
+  const { first_name: firstName, last_name: lastName, auth_user_id: authUserId } = student
+
+  // 2. Delete student profile from public.students (cascades logs)
+  const { error: deleteProfileError } = await serviceClient
+    .from('students')
+    .delete()
+    .eq('id', studentId)
+
+  if (deleteProfileError) {
+    return { error: deleteProfileError.message }
+  }
+
+  // 3. Delete auth account
+  if (authUserId) {
+    const { error: deleteAuthError } = await serviceClient.auth.admin.deleteUser(authUserId)
+    if (deleteAuthError) {
+      console.error('[admin] Failed to delete auth user:', deleteAuthError.message)
+    }
+  }
+
+  // 4. Sync deletion to Google Sheets
+  try {
+    await deleteStudentFromSheets(lastName, firstName)
+  } catch (e) {
+    console.error('[admin] Sheets deletion failed:', e)
+  }
+
+  revalidatePath('/dashboard/admin')
+  revalidatePath(`/dashboard/admin/${studentId}`)
+  return { success: true }
+}
+

@@ -400,3 +400,149 @@ export async function syncAllStudentsToSheets(): Promise<void> {
     console.error('[sync] ❌ Error during full reconciliation:', error)
   }
 }
+
+/**
+ * Deletes a student's individual tab and removes/consolidates their row on the Master tab.
+ * Safely recalculates other students' formula offsets during consolidation.
+ */
+export async function deleteStudentFromSheets(lastName: string, firstName: string): Promise<void> {
+  const spreadsheetId = SPREADSHEET_ID
+  const sheets = getSheetsClient()
+
+  try {
+    const meta = await sheets.spreadsheets.get({ spreadsheetId })
+    const sheetTitles = meta.data.sheets?.map((s) => s.properties?.title || '') || []
+
+    // ── 1. Delete individual sheet tab if exists ──────────────
+    const tabName = toSheetTabName(lastName, firstName)
+    const normalizedTarget = `${lastName}, ${firstName}`.toUpperCase().replace(/[^A-Z0-9]/g, '')
+    let matchedTitle: string | null = null
+    let matchedSheetId: number | null = null
+
+    for (const s of meta.data.sheets || []) {
+      const title = s.properties?.title || ''
+      const normalizedTitle = title.toUpperCase().replace(/[^A-Z0-9]/g, '')
+      if (normalizedTitle.startsWith(normalizedTarget) || normalizedTarget.startsWith(normalizedTitle)) {
+        if (title.toLowerCase() !== 'master' && !title.toUpperCase().includes('TEMPLATE')) {
+          matchedTitle = title
+          matchedSheetId = s.properties?.sheetId ?? null
+          break
+        }
+      }
+    }
+
+    if (matchedTitle && matchedSheetId !== null) {
+      console.log(`[sync] Deleting sheet tab: "${matchedTitle}" (sheetId: ${matchedSheetId})`)
+      await sheets.spreadsheets.batchUpdate({
+        spreadsheetId,
+        requestBody: {
+          requests: [
+            {
+              deleteSheet: {
+                sheetId: matchedSheetId,
+              },
+            },
+          ],
+        },
+      })
+    }
+
+    // ── 2. Consolidate Master Sheet rows ──────────────────────
+    const masterRes = await sheets.spreadsheets.values.get({
+      spreadsheetId,
+      range: `${MASTER_SHEET_NAME}!A1:K1000`,
+    })
+    const rows = masterRes.data.values || []
+    
+    const targetLast = lastName.trim().toUpperCase()
+    const targetFirst = firstName.trim().toUpperCase()
+
+    const cleanRows: string[][] = []
+
+    for (let i = 1; i < rows.length; i++) {
+      const row = rows[i]
+      if (row && row.some(cell => cell && String(cell).trim() !== '')) {
+        const rowLast = (row[0] || '').trim().toUpperCase()
+        const rowFirst = (row[1] || '').trim().toUpperCase()
+        
+        // Skip the student row we are deleting
+        if (rowLast === targetLast && rowFirst === targetFirst) {
+          console.log(`[sync] Removing row for ${lastName}, ${firstName} from Master sheet`)
+          continue
+        }
+        
+        // Skip garbage rows
+        if (rowLast === '`' || rowLast === '') continue
+
+        cleanRows.push(row)
+      }
+    }
+
+    const updatedRows = cleanRows.map((row, index) => {
+      const targetRowIdx = index + 2 // 1-based, +1 for header, +1 for row 2 start
+      const rowLastName = (row[0] || '').trim()
+      const rowFirstName = (row[1] || '').trim()
+
+      // Rederive tab name for this row
+      const normalizedRowTarget = `${rowLastName}, ${rowFirstName}`.toUpperCase().replace(/[^A-Z0-9]/g, '')
+      let rowTabName = toSheetTabName(rowLastName, rowFirstName)
+      for (const title of sheetTitles) {
+        if (title !== matchedTitle && title.toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(normalizedRowTarget)) {
+          rowTabName = title
+          break
+        }
+      }
+
+      const srCode = row[2] || ''
+      const email = row[3] || ''
+      const program = row[4] || ''
+      const reqHours = row[5] || '486'
+      
+      // Regenerate the formula matching the new targetRowIdx
+      const formula = `=F${targetRowIdx}-SUM('${rowTabName}'!E2:E1000) & " hours"`
+      
+      const estCompletion = row[7] || ''
+      const actCompletion = row[8] || ''
+      const project = row[9] || ''
+      const github = row[10] || ''
+
+      return [
+        rowLastName.toUpperCase(),
+        rowFirstName.toUpperCase(),
+        srCode,
+        email,
+        program.toUpperCase(),
+        reqHours,
+        formula,
+        estCompletion,
+        actCompletion,
+        project.toUpperCase(),
+        github
+      ]
+    })
+
+    // Write consolidated rows back
+    if (updatedRows.length > 0) {
+      await sheets.spreadsheets.values.update({
+        spreadsheetId,
+        range: `${MASTER_SHEET_NAME}!A2:K${updatedRows.length + 1}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: updatedRows },
+      })
+    }
+
+    // Clear trailing rows
+    const startClearRow = updatedRows.length + 2
+    if (startClearRow <= 1000) {
+      await sheets.spreadsheets.values.clear({
+        spreadsheetId,
+        range: `${MASTER_SHEET_NAME}!A${startClearRow}:K1000`,
+      })
+    }
+
+    console.log(`[sync] ✅ Successfully cleaned up sheets for ${lastName}, ${firstName}`)
+  } catch (error) {
+    console.error(`[sync] ❌ Error deleting student ${lastName}, ${firstName} from sheets:`, error)
+  }
+}
+
