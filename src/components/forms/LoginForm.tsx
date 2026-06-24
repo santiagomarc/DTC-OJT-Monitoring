@@ -50,7 +50,7 @@ export function LoginForm() {
       <button
         type="submit"
         disabled={isPending}
-        className="mt-6 w-full rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
+        className="mt-6 w-full rounded-xl bg-gradient-to-r from-red-600 to-orange-600 px-4 py-3.5 text-sm font-bold text-white shadow-lg shadow-red-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100"
       >
         {isPending ? 'Signing in…' : 'Sign in'}
       </button>

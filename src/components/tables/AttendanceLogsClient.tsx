@@ -74,16 +74,16 @@ function AttendanceForm({
   return (
     <form
       action={formAction}
-      className="rounded-2xl border border-violet-200/80 bg-violet-50/40 p-6 dark:border-violet-500/20 dark:bg-violet-950/20 backdrop-blur-md shadow-sm space-y-4 transition-all duration-300"
+      className="rounded-2xl border border-red-200/80 bg-red-50/40 p-6 dark:border-red-500/20 dark:bg-red-950/20 backdrop-blur-md shadow-sm space-y-4 transition-all duration-300"
     >
-      <div className="flex items-center justify-between border-b border-violet-100 dark:border-violet-500/10 pb-3">
-        <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+      <div className="flex items-center justify-between border-b border-red-100 dark:border-red-500/10 pb-3">
+        <h3 className="text-sm font-bold text-stone-900 dark:text-white uppercase tracking-wider">
           {isEdit ? 'Edit Attendance Entry' : 'Log New Attendance'}
         </h3>
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-white/5 transition"
+          className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 dark:text-stone-500 dark:hover:bg-white/5 transition"
         >
           <X className="h-4 w-4" />
         </button>
@@ -91,55 +91,55 @@ function AttendanceForm({
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-1.5">Date</label>
+          <label className="text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1.5">Date</label>
           <input
             name="date"
             type="date"
             required
             defaultValue={defaultValues?.date ?? new Date().toISOString().split('T')[0]}
-            className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-white/10 dark:bg-gray-950/40 dark:text-white"
+            className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white"
           />
         </div>
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-1.5">Time In</label>
+          <label className="text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1.5">Time In</label>
           <input
             name="time_in"
             type="time"
             required
             defaultValue={defaultValues?.time_in?.slice(0, 5) ?? '08:00'}
-            className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-white/10 dark:bg-gray-950/40 dark:text-white"
+            className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white"
           />
         </div>
         <div>
-          <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-1.5">Time Out</label>
+          <label className="text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1.5">Time Out</label>
           <input
             name="time_out"
             type="time"
             defaultValue={defaultValues?.time_out?.slice(0, 5) ?? ''}
-            className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-white/10 dark:bg-gray-950/40 dark:text-white"
+            className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white"
           />
-          <p className="mt-1 text-[10px] text-gray-400">Leave blank if still in progress</p>
+          <p className="mt-1 text-[10px] text-stone-400">Leave blank if still in progress</p>
         </div>
       </div>
 
       <div>
-        <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-1.5">Planned Task / Activities</label>
+        <label className="text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1.5">Planned Task / Activities</label>
         <textarea
           name="planned_task"
           rows={2}
           defaultValue={defaultValues?.planned_task ?? ''}
-          className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-white/10 dark:bg-gray-950/40 dark:text-white resize-none"
+          className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white resize-none"
           placeholder="What do you plan to work on?"
         />
       </div>
 
       <div>
-        <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-1.5">Actual Accomplishment</label>
+        <label className="text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1.5">Actual Accomplishment</label>
         <textarea
           name="actual_accomplishment"
           rows={2}
           defaultValue={defaultValues?.actual_accomplishment ?? ''}
-          className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-white/10 dark:bg-gray-950/40 dark:text-white resize-none"
+          className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white resize-none"
           placeholder="What did you actually accomplish?"
         />
       </div>
@@ -152,7 +152,7 @@ function AttendanceForm({
         <button
           type="submit"
           disabled={isPending}
-          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
+          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
         >
           <Check className="h-4 w-4" />
           {isPending ? 'Saving…' : 'Save Entry'}
@@ -160,7 +160,7 @@ function AttendanceForm({
         <button
           type="button"
           onClick={onCancel}
-          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 transition hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
+          className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white dark:border-white/10 dark:bg-stone-900 px-4 py-2 text-sm font-semibold text-stone-600 dark:text-stone-400 transition hover:bg-stone-50 dark:hover:bg-white/5 hover:text-stone-900 dark:hover:text-white"
         >
           <X className="h-4 w-4" />
           Cancel
@@ -206,15 +206,15 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
   return (
     <div className="space-y-6">
       {/* Header and Toggle */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-250/20 dark:border-white/5 pb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-stone-250/20 dark:border-white/5 pb-4">
         <div>
-          <h2 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-wider">Attendance Logs</h2>
-          <p className="text-xs text-gray-500 dark:text-gray-400">Log and manage your daily hours and activity outputs</p>
+          <h2 className="text-lg font-black text-stone-900 dark:text-white uppercase tracking-wider">Attendance Logs</h2>
+          <p className="text-xs text-stone-500 dark:text-stone-400">Log and manage your daily hours and activity outputs</p>
         </div>
         {!showForm && (
           <button
             onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
           >
             <Plus className="h-4 w-4" />
             Log Attendance
@@ -234,10 +234,10 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
 
       {/* Logs list */}
       {logs.length === 0 ? (
-        <div className="rounded-2xl border-2 border-dashed border-gray-200 dark:border-white/5 p-12 text-center">
-          <Clock className="h-8 w-8 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
-          <p className="text-sm font-bold text-gray-550 dark:text-gray-400">No attendance entries logged yet.</p>
-          <p className="mt-1 text-xs text-gray-450 dark:text-gray-500">Get started by clicking &quot;Log Attendance&quot;.</p>
+        <div className="rounded-2xl border-2 border-dashed border-stone-200 dark:border-white/5 p-12 text-center">
+          <Clock className="h-8 w-8 text-stone-400 dark:text-stone-600 mx-auto mb-3" />
+          <p className="text-sm font-bold text-stone-550 dark:text-stone-400">No attendance entries logged yet.</p>
+          <p className="mt-1 text-xs text-stone-450 dark:text-stone-500">Get started by clicking &quot;Log Attendance&quot;.</p>
         </div>
       ) : (
         <div className="space-y-4">
@@ -245,7 +245,7 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full border-separate border-spacing-y-3">
               <thead>
-                <tr className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 select-none">
+                <tr className="text-[10px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 select-none">
                   <th className="px-5 py-2 text-left">Date</th>
                   <th className="px-5 py-2 text-left">Time Session</th>
                   <th className="px-5 py-2 text-left">Hours</th>
@@ -272,16 +272,16 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
                   ) : (
                     <tr
                       key={log.id}
-                      className="group rounded-2xl bg-white dark:bg-gray-900/40 backdrop-blur-md transition-all duration-300 hover:translate-x-0.5 hover:shadow-md border border-transparent hover:border-gray-200/80 dark:hover:border-white/10"
+                      className="group rounded-2xl bg-white dark:bg-stone-900/40 backdrop-blur-md transition-all duration-300 hover:translate-x-0.5 hover:shadow-md border border-transparent hover:border-stone-200/80 dark:hover:border-white/10"
                     >
-                      <td className="px-5 py-4 first:rounded-l-2xl border-y border-l border-gray-200/60 dark:border-white/5 whitespace-nowrap">
+                      <td className="px-5 py-4 first:rounded-l-2xl border-y border-l border-stone-200/60 dark:border-white/5 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <Calendar className="h-4 w-4 text-violet-500" />
-                          <span className="font-bold text-gray-900 dark:text-white text-sm">{formatDate(log.date)}</span>
+                          <Calendar className="h-4 w-4 text-red-500" />
+                          <span className="font-bold text-stone-900 dark:text-white text-sm">{formatDate(log.date)}</span>
                         </div>
                       </td>
-                      <td className="px-5 py-4 border-y border-gray-200/60 dark:border-white/5 whitespace-nowrap">
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                      <td className="px-5 py-4 border-y border-stone-200/60 dark:border-white/5 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
                           <span>{formatTime(log.time_in)}</span>
                           <span>→</span>
                           {log.time_out ? (
@@ -291,36 +291,36 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
                           )}
                         </div>
                       </td>
-                      <td className="px-5 py-4 border-y border-gray-200/60 dark:border-white/5 whitespace-nowrap">
+                      <td className="px-5 py-4 border-y border-stone-200/60 dark:border-white/5 whitespace-nowrap">
                         {log.total_hours != null ? (
-                          <span className="rounded-xl bg-violet-500/15 border border-violet-500/20 px-2.5 py-1 text-xs font-extrabold text-violet-600 dark:text-violet-400">
+                          <span className="rounded-xl bg-red-500/15 border border-red-500/20 px-2.5 py-1 text-xs font-extrabold text-red-600 dark:text-red-400">
                             {Number(log.total_hours).toFixed(2)}h
                           </span>
                         ) : (
-                          <span className="text-gray-400">—</span>
+                          <span className="text-stone-400">—</span>
                         )}
                       </td>
-                      <td className="px-5 py-4 border-y border-gray-200/60 dark:border-white/5 max-w-[200px]">
+                      <td className="px-5 py-4 border-y border-stone-200/60 dark:border-white/5 max-w-[200px]">
                         <div className="flex items-start gap-1.5">
-                          <BookOpen className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" />
-                          <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2" title={log.planned_task ?? undefined}>
-                            {log.planned_task ?? <span className="italic text-gray-400">No task planned</span>}
+                          <BookOpen className="h-3.5 w-3.5 text-stone-400 mt-0.5 shrink-0" />
+                          <p className="text-xs text-stone-600 dark:text-stone-300 line-clamp-2" title={log.planned_task ?? undefined}>
+                            {log.planned_task ?? <span className="italic text-stone-400">No task planned</span>}
                           </p>
                         </div>
                       </td>
-                      <td className="px-5 py-4 border-y border-gray-200/60 dark:border-white/5 max-w-[250px]">
+                      <td className="px-5 py-4 border-y border-stone-200/60 dark:border-white/5 max-w-[250px]">
                         <div className="flex items-start gap-1.5">
-                          <ClipboardCheck className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" />
-                          <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2" title={log.actual_accomplishment ?? undefined}>
-                            {log.actual_accomplishment ?? <span className="italic text-gray-400">No details provided</span>}
+                          <ClipboardCheck className="h-3.5 w-3.5 text-stone-400 mt-0.5 shrink-0" />
+                          <p className="text-xs text-stone-600 dark:text-stone-300 line-clamp-2" title={log.actual_accomplishment ?? undefined}>
+                            {log.actual_accomplishment ?? <span className="italic text-stone-400">No details provided</span>}
                           </p>
                         </div>
                       </td>
-                      <td className="px-5 py-4 last:rounded-r-2xl border-y border-r border-gray-200/60 dark:border-white/5 text-right whitespace-nowrap">
+                      <td className="px-5 py-4 last:rounded-r-2xl border-y border-r border-stone-200/60 dark:border-white/5 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => setEditId(log.id)}
-                            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition"
+                            className="rounded-lg p-2 text-stone-400 hover:bg-stone-100 dark:text-stone-500 dark:hover:bg-white/5 hover:text-stone-900 dark:hover:text-white transition"
                             title="Edit Log"
                           >
                             <Pencil className="h-4 w-4" />
@@ -328,7 +328,7 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
                           <button
                             onClick={() => handleDelete(log.id)}
                             disabled={isPending}
-                            className="rounded-lg p-2 text-gray-400 hover:bg-red-500/10 hover:text-red-500 dark:text-gray-500 dark:hover:bg-red-500/20 dark:hover:text-red-400 transition disabled:opacity-50"
+                            className="rounded-lg p-2 text-stone-400 hover:bg-red-500/10 hover:text-red-500 dark:text-stone-500 dark:hover:bg-red-500/20 dark:hover:text-red-400 transition disabled:opacity-50"
                             title="Delete Log"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -357,12 +357,12 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
               ) : (
                 <div
                   key={log.id}
-                  className="rounded-2xl border border-gray-200/80 bg-white p-5 dark:border-white/10 dark:bg-gray-900/40 backdrop-blur-md shadow-sm transition hover:shadow-md"
+                  className="rounded-2xl border border-stone-200/80 bg-white p-5 dark:border-white/10 dark:bg-stone-900/40 backdrop-blur-md shadow-sm transition hover:shadow-md"
                 >
-                  <div className="flex items-start justify-between gap-4 mb-3 border-b border-gray-100 dark:border-white/5 pb-2.5">
+                  <div className="flex items-start justify-between gap-4 mb-3 border-b border-stone-100 dark:border-white/5 pb-2.5">
                     <div>
-                      <span className="font-bold text-gray-900 dark:text-white text-sm">{formatDate(log.date)}</span>
-                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
+                      <span className="font-bold text-stone-900 dark:text-white text-sm">{formatDate(log.date)}</span>
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-stone-500 dark:text-stone-400 mt-0.5">
                         <span>{formatTime(log.time_in)}</span>
                         <span>→</span>
                         {log.time_out ? (
@@ -375,21 +375,21 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
                     
                     <div className="flex items-center gap-2">
                       {log.total_hours != null && (
-                        <span className="rounded-xl bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">
+                        <span className="rounded-xl bg-red-500/10 border border-red-500/20 px-2 py-0.5 text-xs font-bold text-red-600 dark:text-red-400">
                           {Number(log.total_hours).toFixed(1)}h
                         </span>
                       )}
                       
                       <button
                         onClick={() => setEditId(log.id)}
-                        className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-white/5 transition"
+                        className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 dark:text-stone-500 dark:hover:bg-white/5 transition"
                       >
                         <Pencil className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => handleDelete(log.id)}
                         disabled={isPending}
-                        className="rounded-lg p-1.5 text-gray-400 hover:bg-red-500/10 hover:text-red-500 dark:text-gray-550 transition disabled:opacity-50"
+                        className="rounded-lg p-1.5 text-stone-400 hover:bg-red-500/10 hover:text-red-500 dark:text-stone-550 transition disabled:opacity-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" />
                       </button>
@@ -399,14 +399,14 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
                   <div className="space-y-2">
                     {log.planned_task && (
                       <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">Planned</span>
-                        <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5">{log.planned_task}</p>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">Planned</span>
+                        <p className="text-xs text-stone-700 dark:text-stone-300 mt-0.5">{log.planned_task}</p>
                       </div>
                     )}
                     {log.actual_accomplishment && (
                       <div>
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">Accomplished</span>
-                        <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5">{log.actual_accomplishment}</p>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block">Accomplished</span>
+                        <p className="text-xs text-stone-700 dark:text-stone-300 mt-0.5">{log.actual_accomplishment}</p>
                       </div>
                     )}
                   </div>

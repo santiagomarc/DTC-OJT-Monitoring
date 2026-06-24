@@ -99,17 +99,17 @@ export function SyncRefreshBanner() {
     <div
       role="status"
       aria-live="polite"
-      className="fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-2xl border border-violet-500/30 bg-gray-900/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-md animate-in slide-in-from-bottom-4 duration-300"
+      className="fixed bottom-5 right-5 z-50 flex items-center gap-3 rounded-2xl border border-red-500/30 bg-stone-900/95 px-4 py-3 shadow-2xl shadow-black/40 backdrop-blur-md animate-in slide-in-from-bottom-4 duration-300"
     >
       {/* Icon */}
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-violet-500/20">
-        <RefreshCw className="h-4 w-4 text-violet-400 animate-spin [animation-duration:3s]" />
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500/20">
+        <RefreshCw className="h-4 w-4 text-red-400 animate-spin [animation-duration:3s]" />
       </div>
 
       {/* Text */}
       <div className="min-w-0">
         <p className="text-sm font-medium text-white">Data may be outdated</p>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-stone-400">
           {countdown !== null
             ? `Auto-refreshing in ${countdown}s…`
             : 'Refresh to see the latest updates from the sheet.'}
@@ -119,7 +119,7 @@ export function SyncRefreshBanner() {
       {/* Refresh button */}
       <button
         onClick={handleRefresh}
-        className="shrink-0 rounded-lg bg-violet-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-violet-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-400"
+        className="shrink-0 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
       >
         Refresh
       </button>
@@ -127,7 +127,7 @@ export function SyncRefreshBanner() {
       {/* Dismiss button */}
       <button
         onClick={dismiss}
-        className="shrink-0 rounded-lg p-1.5 text-gray-500 transition hover:bg-white/10 hover:text-gray-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
+        className="shrink-0 rounded-lg p-1.5 text-stone-500 transition hover:bg-white/10 hover:text-stone-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
         aria-label="Dismiss"
       >
         <X className="h-3.5 w-3.5" />

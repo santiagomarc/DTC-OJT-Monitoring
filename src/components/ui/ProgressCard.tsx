@@ -59,25 +59,25 @@ export function ProgressCard({ progress }: ProgressCardProps) {
       </div>
 
       {/* Progress bar card */}
-      <div className="relative overflow-hidden rounded-2xl border border-gray-200/80 bg-white p-6 dark:border-white/10 dark:bg-gray-900/40 backdrop-blur-md shadow-sm">
+      <div className="relative overflow-hidden rounded-2xl border border-stone-200/80 bg-white p-6 dark:border-white/10 dark:bg-stone-900/40 backdrop-blur-md shadow-sm">
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">Overall Internship Progress</h3>
-            <p className="text-xs text-gray-500 dark:text-gray-400">Total completion percentage based on rendered hours</p>
+            <h3 className="text-sm font-bold text-stone-900 dark:text-white uppercase tracking-wider">Overall Internship Progress</h3>
+            <p className="text-xs text-stone-500 dark:text-stone-400">Total completion percentage based on rendered hours</p>
           </div>
-          <span className="text-2xl font-black text-violet-600 dark:text-violet-400">{pct}%</span>
+          <span className="text-2xl font-black text-red-600 dark:text-red-400">{pct}%</span>
         </div>
         
-        <div className="relative h-4 w-full overflow-hidden rounded-full bg-gray-150 dark:bg-gray-800">
+        <div className="relative h-4 w-full overflow-hidden rounded-full bg-stone-150 dark:bg-stone-800">
           {/* Glowing bar */}
           <div
             className={`h-full rounded-full transition-all duration-1000 ease-out ${
               isComplete
                 ? 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-[0_0_12px_rgba(16,185,129,0.4)]'
                 : pct >= 75
-                ? 'bg-gradient-to-r from-violet-600 to-fuchsia-500 shadow-[0_0_12px_rgba(139,92,246,0.4)]'
+                ? 'bg-gradient-to-r from-red-600 to-red-500 shadow-[0_0_12px_rgba(139,92,246,0.4)]'
                 : pct >= 50
-                ? 'bg-gradient-to-r from-indigo-600 to-violet-500'
+                ? 'bg-gradient-to-r from-orange-600 to-red-500'
                 : 'bg-gradient-to-r from-amber-500 to-orange-400'
             }`}
             style={{ width: `${pct}%` }}
@@ -105,9 +105,9 @@ interface StatCardProps {
 function StatCard({ icon, label, value, sub, color }: StatCardProps) {
   const colorClasses = {
     violet: {
-      bg: 'bg-violet-500/10 text-violet-600 dark:bg-violet-500/20 dark:text-violet-400',
-      border: 'hover:border-violet-300 dark:hover:border-violet-500/30',
-      glow: 'group-hover:shadow-violet-500/5',
+      bg: 'bg-red-500/10 text-red-600 dark:bg-red-500/20 dark:text-red-400',
+      border: 'hover:border-red-300 dark:hover:border-red-500/30',
+      glow: 'group-hover:shadow-red-500/5',
     },
     amber: {
       bg: 'bg-amber-500/10 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400',
@@ -129,17 +129,17 @@ function StatCard({ icon, label, value, sub, color }: StatCardProps) {
   const activeColor = colorClasses[color]
 
   return (
-    <div className={`group relative rounded-2xl border border-gray-200/80 bg-white p-5 dark:border-white/10 dark:bg-gray-900/40 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${activeColor.border} ${activeColor.glow}`}>
+    <div className={`group relative rounded-2xl border border-stone-200/80 bg-white p-5 dark:border-white/10 dark:bg-stone-900/40 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${activeColor.border} ${activeColor.glow}`}>
       <div className="mb-4 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
           {label}
         </span>
         <div className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-300 ${activeColor.bg}`}>
           {icon}
         </div>
       </div>
-      <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">{value}</p>
-      <p className="mt-1 text-[11px] font-medium text-gray-500 dark:text-gray-400">{sub}</p>
+      <p className="text-2xl font-black text-stone-900 dark:text-white tracking-tight">{value}</p>
+      <p className="mt-1 text-[11px] font-medium text-stone-500 dark:text-stone-400">{sub}</p>
     </div>
   )
 }

@@ -20,7 +20,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" className={inter.variable} suppressHydrationWarning>
-      <body className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100 antialiased transition-colors duration-200">
+      <body className="min-h-screen bg-white text-stone-900 dark:bg-stone-950 dark:text-stone-100 antialiased transition-colors duration-200">
         <ThemeProvider
           attribute="class"
           defaultTheme="light"

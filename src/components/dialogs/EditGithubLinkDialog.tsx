@@ -29,21 +29,21 @@ export function EditGithubLinkDialog({ initialValue }: Props) {
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 hover:text-gray-700 dark:text-gray-500 dark:hover:bg-white/5 dark:hover:text-white transition"
+        className="rounded-lg p-2 text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:text-stone-500 dark:hover:bg-white/5 dark:hover:text-white transition"
         title="Edit GitHub Link"
       >
         <Pencil className="h-4 w-4" />
       </button>
 
       {isOpen && (
-        <div className="absolute inset-0 z-50 flex flex-col justify-center bg-white/95 p-6 backdrop-blur-xl dark:bg-gray-900/95 animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute inset-0 z-50 flex flex-col justify-center bg-white p-6 backdrop-blur-xl dark:bg-stone-900/95 animate-in fade-in zoom-in-95 duration-200">
           <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-bold uppercase tracking-wider text-gray-900 dark:text-white">
+            <h2 className="text-sm font-bold uppercase tracking-wider text-stone-900 dark:text-white">
               Edit GitHub Link
             </h2>
             <button
               onClick={() => setIsOpen(false)}
-              className="rounded-lg p-1 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5 transition"
+              className="rounded-lg p-1 text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/5 transition"
             >
               <X className="h-5 w-5" />
             </button>
@@ -60,7 +60,7 @@ export function EditGithubLinkDialog({ initialValue }: Props) {
             <button
               type="submit"
               disabled={isPending}
-              className="shrink-0 rounded-xl bg-violet-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-50"
+              className="shrink-0 rounded-xl bg-red-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-red-500 disabled:opacity-50"
             >
               {isPending ? 'Saving...' : 'Save'}
             </button>

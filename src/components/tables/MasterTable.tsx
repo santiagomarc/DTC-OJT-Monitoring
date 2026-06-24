@@ -132,7 +132,7 @@ export function MasterTable({ students, sheetUrl }: Props) {
           )}
           <button
             onClick={exportToCSV}
-            className="inline-flex items-center gap-2 rounded-xl border border-violet-500/30 bg-violet-500/10 px-4 py-2.5 text-sm font-medium text-violet-400 hover:bg-violet-500/20 hover:text-violet-300 transition cursor-pointer"
+            className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/20 hover:text-red-300 transition cursor-pointer"
           >
             <Download className="h-4 w-4" />
             Export to CSV
@@ -141,26 +141,26 @@ export function MasterTable({ students, sheetUrl }: Props) {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-gray-200 dark:border-white/10">
+      <div className="overflow-x-auto rounded-xl border border-stone-200 dark:border-white/10">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-50 dark:border-white/10 dark:bg-white/5">
+            <tr className="border-b border-stone-200 bg-stone-50 dark:border-white/10 dark:bg-white/5">
               <SortHeader label="Name" sortKey="name" current={sortKey} dir={sortDir} onSort={handleSort} />
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">SR-Code</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Email</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">SR-Code</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">Email</th>
               <SortHeader label="Program" sortKey="program" current={sortKey} dir={sortDir} onSort={handleSort} />
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Required</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">Required</th>
               <SortHeader label="Progress" sortKey="progress" current={sortKey} dir={sortDir} onSort={handleSort} />
               <SortHeader label="Remaining" sortKey="remaining" current={sortKey} dir={sortDir} onSort={handleSort} />
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">Est. Completion</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">GitHub</th>
-              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400"></th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">Est. Completion</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">GitHub</th>
+              <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400"></th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-white/5">
+          <tbody className="divide-y divide-stone-200 dark:divide-white/5">
             {sorted.length === 0 ? (
               <tr>
-                <td colSpan={10} className="px-4 py-10 text-center text-gray-500 dark:text-gray-400">
+                <td colSpan={10} className="px-4 py-10 text-center text-stone-500 dark:text-stone-400">
                   No interns found.
                 </td>
               </tr>
@@ -174,27 +174,27 @@ export function MasterTable({ students, sheetUrl }: Props) {
               const isComplete = s.remaining_hours <= 0
 
               return (
-                <tr key={s.id} className="transition hover:bg-gray-50 dark:hover:bg-white/5">
+                <tr key={s.id} className="transition hover:bg-stone-50 dark:hover:bg-white/5">
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="font-medium text-gray-900 dark:text-white">
+                    <span className="font-medium text-stone-900 dark:text-white">
                       {s.last_name}, {s.first_name}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{s.sr_code || '—'}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{s.email || '—'}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{s.program}</td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{s.required_ojt_hours}h</td>
+                  <td className="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap">{s.sr_code || '—'}</td>
+                  <td className="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap">{s.email || '—'}</td>
+                  <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{s.program}</td>
+                  <td className="px-4 py-3 text-stone-600 dark:text-stone-400">{s.required_ojt_hours}h</td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
+                      <div className="h-1.5 w-24 overflow-hidden rounded-full bg-stone-200 dark:bg-stone-800">
                         <div
                           className={`h-full rounded-full ${
-                            isComplete ? 'bg-emerald-500' : 'bg-violet-500'
+                            isComplete ? 'bg-emerald-500' : 'bg-red-500'
                           }`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
-                      <span className="text-xs text-gray-600 dark:text-gray-400">{pct}%</span>
+                      <span className="text-xs text-stone-600 dark:text-stone-400">{pct}%</span>
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
@@ -203,10 +203,10 @@ export function MasterTable({ students, sheetUrl }: Props) {
                         Complete ✓
                       </span>
                     ) : (
-                      <span className="text-gray-700 dark:text-gray-300">{Number(s.remaining_hours).toFixed(1)}h</span>
+                      <span className="text-stone-700 dark:text-stone-300">{Number(s.remaining_hours).toFixed(1)}h</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                  <td className="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap">
                     {formatDate(s.estimated_completion_date)}
                   </td>
                   <td className="px-4 py-3">
@@ -215,18 +215,18 @@ export function MasterTable({ students, sheetUrl }: Props) {
                         href={s.github_link}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 transition-colors dark:text-violet-400 dark:hover:text-violet-300"
+                        className="inline-flex items-center gap-1 text-xs text-red-600 hover:text-red-700 transition-colors dark:text-red-400 dark:hover:text-red-300"
                       >
                         View <ExternalLink className="h-3 w-3" />
                       </a>
                     ) : (
-                      <span className="text-gray-400 dark:text-gray-600">—</span>
+                      <span className="text-stone-400 dark:text-stone-600">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
                     <Link
                       href={`/dashboard/admin/${s.id}`}
-                      className="text-xs font-medium text-violet-600 hover:text-violet-700 transition-colors whitespace-nowrap dark:text-violet-400 dark:hover:text-violet-300"
+                      className="text-xs font-medium text-red-600 hover:text-red-700 transition-colors whitespace-nowrap dark:text-red-400 dark:hover:text-red-300"
                     >
                       View logs →
                     </Link>
@@ -255,15 +255,15 @@ function SortHeader({
   onSort: (k: SortKey) => void
 }) {
   return (
-    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+    <th className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
       <button
         onClick={() => onSort(sortKey)}
-        className="inline-flex items-center gap-1 hover:text-gray-900 transition-colors dark:hover:text-white"
+        className="inline-flex items-center gap-1 hover:text-stone-900 transition-colors dark:hover:text-white"
       >
         {label}
-        <ArrowUpDown className={`h-3 w-3 ${current === sortKey ? 'text-violet-600 dark:text-violet-400' : ''}`} />
+        <ArrowUpDown className={`h-3 w-3 ${current === sortKey ? 'text-red-600 dark:text-red-400' : ''}`} />
         {current === sortKey && (
-          <span className="text-violet-600 dark:text-violet-400">{dir === 'asc' ? '↑' : '↓'}</span>
+          <span className="text-red-600 dark:text-red-400">{dir === 'asc' ? '↑' : '↓'}</span>
         )}
       </button>
     </th>

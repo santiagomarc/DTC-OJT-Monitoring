@@ -38,12 +38,12 @@ export function ManualLogDialog({ studentId }: Props) {
 
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-white/10 dark:bg-gray-900">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl dark:border dark:border-white/10 dark:bg-stone-900">
             <div className="mb-6 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Manual Log</h2>
+              <h2 className="text-xl font-bold text-stone-900 dark:text-white">Add Manual Log</h2>
               <button
                 onClick={() => setIsOpen(false)}
-                className="rounded-lg p-2 text-gray-500 hover:bg-gray-100 dark:text-gray-400 dark:hover:bg-white/5"
+                className="rounded-lg p-2 text-stone-500 hover:bg-stone-100 dark:text-stone-400 dark:hover:bg-white/5"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -99,7 +99,7 @@ export function ManualLogDialog({ studentId }: Props) {
                 <button
                   type="button"
                   onClick={() => setIsOpen(false)}
-                  className="rounded-xl px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-white/5"
+                  className="rounded-xl px-4 py-2 text-sm font-medium text-stone-700 hover:bg-stone-100 dark:text-stone-300 dark:hover:bg-white/5"
                 >
                   Cancel
                 </button>

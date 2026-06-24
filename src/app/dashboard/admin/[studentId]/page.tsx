@@ -45,16 +45,16 @@ export default async function AdminStudentDetailPage({ params }: Props) {
       <div>
         <Link
           href="/dashboard/admin"
-          className="mb-4 inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition-colors dark:text-gray-400 dark:hover:text-white"
+          className="mb-4 inline-flex items-center gap-2 text-sm text-stone-500 hover:text-stone-900 transition-colors dark:text-stone-400 dark:hover:text-white"
         >
           <ArrowLeft className="h-4 w-4" /> Back to Master Dashboard
         </Link>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-stone-900 dark:text-white">
               {progress.last_name}, {progress.first_name}
             </h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
               {progress.program} · {progress.required_ojt_hours}h required
             </p>
           </div>
@@ -79,16 +79,16 @@ export default async function AdminStudentDetailPage({ params }: Props) {
 
       {progress.assigned_project && (
         <div className="card">
-          <p className="text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
+          <p className="text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
             Assigned Project
           </p>
-          <p className="mt-2 text-gray-900 dark:text-white">{progress.assigned_project}</p>
+          <p className="mt-2 text-stone-900 dark:text-white">{progress.assigned_project}</p>
           {progress.github_link && (
             <a
               href={progress.github_link}
               target="_blank"
               rel="noopener noreferrer"
-              className="mt-2 inline-block text-sm text-violet-600 hover:text-violet-500 transition-colors dark:text-violet-400 dark:hover:text-violet-300"
+              className="mt-2 inline-block text-sm text-red-600 hover:text-red-500 transition-colors dark:text-red-400 dark:hover:text-red-300"
             >
               View on GitHub →
             </a>
@@ -98,7 +98,7 @@ export default async function AdminStudentDetailPage({ params }: Props) {
 
       <div>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <h2 className="text-lg font-semibold text-stone-900 dark:text-white">
             Attendance Log ({(logs ?? []).length} entries)
           </h2>
           <ManualLogDialog studentId={studentId} />

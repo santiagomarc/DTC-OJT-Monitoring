@@ -22,7 +22,7 @@ export default async function DashboardLayout({
 
   if (profile.role === 'admin') {
     return (
-      <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-950">
+      <div className="flex min-h-screen flex-col bg-white dark:bg-stone-950">
         <AdminHeader profile={profile} />
         <main className="flex-1 overflow-auto p-6 lg:p-8">
           <div className="mx-auto max-w-7xl">
@@ -35,7 +35,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-950">
+    <div className="flex min-h-screen flex-col bg-stone-50 dark:bg-stone-950">
       <StudentHeader profile={profile} />
       <main className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="mx-auto max-w-5xl">

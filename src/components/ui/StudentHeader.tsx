@@ -11,28 +11,28 @@ interface StudentHeaderProps {
 
 export function StudentHeader({ profile }: StudentHeaderProps) {
   return (
-    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-gray-200 bg-white/70 px-6 backdrop-blur-md dark:border-white/10 dark:bg-gray-950/70">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-stone-200 bg-stone-50/80 px-6 backdrop-blur-md dark:border-white/10 dark:bg-stone-950/70">
       {/* Brand */}
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-violet-600 to-indigo-600 shadow-md shadow-violet-500/20">
+        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-tr from-red-600 to-orange-600 shadow-md shadow-red-500/20">
           <GraduationCap className="h-5.5 w-5.5 text-white" />
         </div>
         <div>
-          <p className="text-sm font-black tracking-tight text-gray-900 dark:text-white uppercase">BatSU DTC</p>
-          <p className="text-[10px] font-semibold text-violet-600 dark:text-violet-400 uppercase tracking-widest">OJT Monitoring</p>
+          <p className="text-sm font-black tracking-tight text-stone-900 dark:text-white uppercase">BatSU DTC</p>
+          <p className="text-[10px] font-semibold text-red-600 dark:text-red-400 uppercase tracking-widest">OJT Monitoring</p>
         </div>
       </div>
 
       {/* Right side: User Info, Theme Toggle, Logout */}
       <div className="flex items-center gap-4">
         <div className="hidden text-right md:block">
-          <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Intern Account</p>
-          <p className="text-sm font-bold text-gray-900 dark:text-white">
+          <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">Intern Account</p>
+          <p className="text-sm font-bold text-stone-900 dark:text-white">
             {profile.first_name} {profile.last_name}
           </p>
         </div>
 
-        <div className="h-8 w-px bg-gray-200 dark:bg-white/10 hidden md:block" />
+        <div className="h-8 w-px bg-stone-200 dark:bg-white/10 hidden md:block" />
 
         <ThemeToggle />
 
