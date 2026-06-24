@@ -26,37 +26,15 @@ export async function createClient() {
   )
 }
 
+import { createClient as createSupabaseClient } from '@supabase/supabase-js'
+
 /**
  * Service-role client for admin operations (bypasses RLS).
  * NEVER expose this to the browser.
  */
 export async function createServiceClient() {
-  let cookieStore: Awaited<ReturnType<typeof cookies>> | undefined;
-  try {
-    cookieStore = await cookies()
-  } catch {
-    // cookies() called outside a request scope
-  }
-
-  return createServerClient(
+  return createSupabaseClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore ? cookieStore.getAll() : []
-        },
-        setAll(cookiesToSet) {
-          if (!cookieStore) return
-          try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            )
-          } catch {
-            // ignore
-          }
-        },
-      },
-    }
+    process.env.SUPABASE_SERVICE_ROLE_KEY!
   )
 }
