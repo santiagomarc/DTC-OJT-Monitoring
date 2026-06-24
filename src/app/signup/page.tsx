@@ -23,7 +23,7 @@ export default function SignupPage() {
             Create Your Account
           </h1>
           <p className="mt-2 text-sm font-medium text-stone-500 dark:text-stone-400">
-            BatSU Digital Transformation Center
+            BatStateU Alangilan - Digital Transformation Center
           </p>
         </div>
 

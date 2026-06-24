@@ -59,7 +59,7 @@ export function SignupForm() {
 
       <div>
         <label htmlFor="sr_code" className="label">
-          SR-Code (e.g. 23-06643)
+          SR-Code (e.g. 2X-XXXXX)
         </label>
         <input
           id="sr_code"
@@ -68,7 +68,7 @@ export function SignupForm() {
           required
           pattern="\d{2}-\d{5}"
           className="input"
-          placeholder="23-06643"
+          placeholder="2X-XXXXX"
         />
       </div>
 

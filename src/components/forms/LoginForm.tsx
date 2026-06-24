@@ -22,7 +22,7 @@ export function LoginForm() {
           autoComplete="username"
           required
           className="input"
-          placeholder="you@g.batstate-u.edu.ph or 23-06643"
+          placeholder="[EMAIL_ADDRESS] or SR-CODE"
         />
       </div>
 
