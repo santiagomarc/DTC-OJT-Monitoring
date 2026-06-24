@@ -24,10 +24,10 @@ export default async function StudentDashboardPage() {
     <div className="space-y-8">
       {/* Page header */}
       <div>
-        <h1 className="text-2xl font-bold text-white">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           Welcome back, {profile.first_name} 👋
         </h1>
-        <p className="mt-1 text-sm text-gray-400">
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           {profile.program} Intern · {profile.required_ojt_hours}h required
         </p>
       </div>
@@ -38,7 +38,7 @@ export default async function StudentDashboardPage() {
       {/* Recent logs */}
       <div>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-white">Recent Entries</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Recent Entries</h2>
           <a
             href="/dashboard/logs"
             className="text-sm font-medium text-violet-400 hover:text-violet-300 transition-colors"

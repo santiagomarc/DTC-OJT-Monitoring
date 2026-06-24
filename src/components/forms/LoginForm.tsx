@@ -12,7 +12,7 @@ export function LoginForm() {
   return (
     <form action={formAction} className="space-y-4">
       <div>
-        <label htmlFor="identifier" className="block text-sm font-medium text-gray-300 mb-1.5">
+        <label htmlFor="identifier" className="label">
           Email or SR-Code
         </label>
         <input
@@ -21,13 +21,13 @@ export function LoginForm() {
           type="text"
           autoComplete="username"
           required
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+          className="input"
           placeholder="you@g.batstate-u.edu.ph or 23-06643"
         />
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1.5">
+        <label htmlFor="password" className="label">
           Password
         </label>
         <input
@@ -36,13 +36,13 @@ export function LoginForm() {
           type="password"
           autoComplete="current-password"
           required
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+          className="input"
           placeholder="••••••••"
         />
       </div>
 
       {state.error && !state.success && (
-        <p className="rounded-lg bg-red-500/10 px-4 py-2.5 text-sm text-red-400 border border-red-500/20">
+        <p className="rounded-lg bg-red-50 text-red-600 border border-red-200 dark:bg-red-500/10 px-4 py-2.5 text-sm dark:text-red-400 dark:border-red-500/20">
           {state.error}
         </p>
       )}

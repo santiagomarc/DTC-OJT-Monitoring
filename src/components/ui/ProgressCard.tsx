@@ -59,12 +59,12 @@ export function ProgressCard({ progress }: ProgressCardProps) {
       </div>
 
       {/* Progress bar */}
-      <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+      <div className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-5 shadow-sm">
         <div className="mb-3 flex items-center justify-between">
-          <span className="text-sm font-medium text-gray-300">Overall Progress</span>
-          <span className="text-sm font-bold text-white">{pct}%</span>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Overall Progress</span>
+          <span className="text-sm font-bold text-gray-900 dark:text-white">{pct}%</span>
         </div>
-        <div className="h-3 overflow-hidden rounded-full bg-gray-800">
+        <div className="h-3 overflow-hidden rounded-full bg-gray-200 dark:bg-gray-800">
           <div
             className={`h-full rounded-full transition-all duration-700 ${
               isComplete
@@ -98,14 +98,14 @@ interface StatCardProps {
 
 function StatCard({ icon, label, value, sub }: StatCardProps) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-5">
+    <div className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-5 shadow-sm">
       <div className="mb-3 flex items-center gap-2">
         {icon}
         <span className="text-xs font-medium uppercase tracking-wider text-gray-500">
           {label}
         </span>
       </div>
-      <p className="text-xl font-bold text-white">{value}</p>
+      <p className="text-xl font-bold text-gray-900 dark:text-white">{value}</p>
       <p className="mt-0.5 text-xs text-gray-500">{sub}</p>
     </div>
   )

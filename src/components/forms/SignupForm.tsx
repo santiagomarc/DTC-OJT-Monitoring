@@ -15,7 +15,7 @@ export function SignupForm() {
     <form action={formAction} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="first_name" className="block text-sm font-medium text-gray-300 mb-1.5">
+          <label htmlFor="first_name" className="label">
             First Name
           </label>
           <input
@@ -23,12 +23,12 @@ export function SignupForm() {
             name="first_name"
             type="text"
             required
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+            className="input"
             placeholder="Maria"
           />
         </div>
         <div>
-          <label htmlFor="last_name" className="block text-sm font-medium text-gray-300 mb-1.5">
+          <label htmlFor="last_name" className="label">
             Last Name
           </label>
           <input
@@ -36,14 +36,14 @@ export function SignupForm() {
             name="last_name"
             type="text"
             required
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+            className="input"
             placeholder="De Leon"
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1.5">
+        <label htmlFor="email" className="label">
           Email
         </label>
         <input
@@ -52,13 +52,13 @@ export function SignupForm() {
           type="email"
           autoComplete="email"
           required
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+          className="input"
           placeholder="you@example.com"
         />
       </div>
 
       <div>
-        <label htmlFor="sr_code" className="block text-sm font-medium text-gray-300 mb-1.5">
+        <label htmlFor="sr_code" className="label">
           SR-Code (e.g. 23-06643)
         </label>
         <input
@@ -67,21 +67,21 @@ export function SignupForm() {
           type="text"
           required
           pattern="\d{2}-\d{5}"
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+          className="input"
           placeholder="23-06643"
         />
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="program" className="block text-sm font-medium text-gray-300 mb-1.5">
+          <label htmlFor="program" className="label">
             Program
           </label>
           <select
             id="program"
             name="program"
             required
-            className="w-full rounded-xl border border-white/10 bg-gray-900 px-4 py-3 text-sm text-white outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+            className="input"
           >
             <option value="">Select…</option>
             {PROGRAMS.map((p) => (
@@ -90,7 +90,7 @@ export function SignupForm() {
           </select>
         </div>
         <div>
-          <label htmlFor="required_ojt_hours" className="block text-sm font-medium text-gray-300 mb-1.5">
+          <label htmlFor="required_ojt_hours" className="label">
             Required Hours
           </label>
           <input
@@ -101,13 +101,13 @@ export function SignupForm() {
             min={1}
             max={2000}
             required
-            className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+            className="input"
           />
         </div>
       </div>
 
       <div>
-        <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1.5">
+        <label htmlFor="password" className="label">
           Password
         </label>
         <input
@@ -117,13 +117,13 @@ export function SignupForm() {
           autoComplete="new-password"
           required
           minLength={6}
-          className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder-gray-500 outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500"
+          className="input"
           placeholder="Min. 6 characters"
         />
       </div>
 
       {state.error && !state.success && (
-        <p className="rounded-lg bg-red-500/10 px-4 py-2.5 text-sm text-red-400 border border-red-500/20">
+        <p className="rounded-lg bg-red-50 text-red-600 border border-red-200 dark:bg-red-500/10 px-4 py-2.5 text-sm dark:text-red-400 dark:border-red-500/20">
           {state.error}
         </p>
       )}

@@ -75,9 +75,9 @@ function AttendanceForm({
   return (
     <form
       action={formAction}
-      className="rounded-xl border border-violet-500/30 bg-violet-500/5 p-5 space-y-4"
+      className="rounded-xl border border-violet-200 bg-violet-50 dark:border-violet-500/30 dark:bg-violet-500/5 p-5 space-y-4"
     >
-      <h3 className="text-sm font-semibold text-white">
+      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
         {isEdit ? 'Edit Entry' : 'New Attendance Entry'}
       </h3>
 
@@ -152,7 +152,7 @@ function AttendanceForm({
         <button
           type="button"
           onClick={onCancel}
-          className="flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm font-medium text-gray-400 transition hover:bg-white/5 hover:text-white"
+          className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 transition hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
         >
           <X className="h-4 w-4" />
           Cancel
@@ -218,7 +218,7 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
 
       {/* Logs list */}
       {logs.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-white/10 p-12 text-center">
+        <div className="rounded-xl border border-dashed border-gray-200 dark:border-white/10 p-12 text-center">
           <p className="text-gray-500">No attendance entries yet.</p>
           <p className="mt-1 text-sm text-gray-600">Click &quot;Log Attendance&quot; to get started.</p>
         </div>
@@ -261,11 +261,11 @@ function LogCard({
   isDeleting: boolean
 }) {
   return (
-    <div className="rounded-xl border border-white/10 bg-white/5 p-5 transition hover:border-white/20">
+    <div className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-5 transition hover:border-gray-300 dark:hover:border-white/20 shadow-sm">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-3 mb-3">
-            <span className="text-sm font-semibold text-white">{formatDate(log.date)}</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatDate(log.date)}</span>
             <span className="text-xs text-gray-500">
               {formatTime(log.time_in)} → {formatTime(log.time_out)}
             </span>
@@ -284,13 +284,13 @@ function LogCard({
           {log.planned_task && (
             <div className="mb-2">
               <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Planned</p>
-              <p className="mt-0.5 text-sm text-gray-300 line-clamp-2">{log.planned_task}</p>
+              <p className="mt-0.5 text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{log.planned_task}</p>
             </div>
           )}
           {log.actual_accomplishment && (
             <div>
               <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Accomplished</p>
-              <p className="mt-0.5 text-sm text-gray-300 line-clamp-2">{log.actual_accomplishment}</p>
+              <p className="mt-0.5 text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{log.actual_accomplishment}</p>
             </div>
           )}
         </div>
@@ -299,7 +299,7 @@ function LogCard({
         <div className="flex shrink-0 gap-2">
           <button
             onClick={onEdit}
-            className="rounded-lg p-2 text-gray-500 transition hover:bg-white/10 hover:text-white"
+            className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
             title="Edit"
           >
             <Pencil className="h-4 w-4" />
