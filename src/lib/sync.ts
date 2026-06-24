@@ -286,7 +286,15 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
     // ── 4. Update individual attendance tab ───────────────────
     await ensureSheetTab(sheets, tabName)
 
-    // Header row + data rows
+    // Check how many rows already exist in the tab so we can decide
+    // whether to write the header (row 1) or skip it to preserve any
+    // custom formatting the supervisor has applied there.
+    const existingTabRes = await sheets.spreadsheets.values.get({
+      spreadsheetId: SPREADSHEET_ID,
+      range: `'${tabName}'!A1:A1`,
+    })
+    const tabHasHeader = (existingTabRes.data.values?.length ?? 0) > 0
+
     const headerRow = [
       'DATE',
       'DAY',
@@ -309,22 +317,44 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
       ]
     )
 
-    const allRows = [headerRow, ...attendanceRows]
-
-    await sheets.spreadsheets.values.update({
-      spreadsheetId: SPREADSHEET_ID,
-      range: `'${tabName}'!A1:G${allRows.length}`,
-      valueInputOption: 'USER_ENTERED',
-      requestBody: { values: allRows },
-    })
-
-    // Clear any trailing/ghost rows down to 1000 to prevent stale data double-counting
-    const startClearRow = allRows.length + 1
-    if (startClearRow <= 1000) {
-      await sheets.spreadsheets.values.clear({
+    // If the tab already has a header row, only write data rows (starting at row 2).
+    // This preserves any custom formatting (colors, borders, fonts) on row 1.
+    if (tabHasHeader && attendanceRows.length > 0) {
+      await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: `'${tabName}'!A${startClearRow}:G1000`,
+        range: `'${tabName}'!A2:G${attendanceRows.length + 1}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: attendanceRows },
       })
+
+      // Only clear the TAIL rows beyond what we just wrote.
+      // IMPORTANT: Do NOT clear from row 1 — that would destroy header formatting.
+      // We start clearing from one row past the last data row.
+      const startClearRow = attendanceRows.length + 2 // +1 for header, +1 for next empty
+      if (startClearRow <= 1000) {
+        await sheets.spreadsheets.values.clear({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `'${tabName}'!A${startClearRow}:G1000`,
+        })
+      }
+    } else {
+      // Fresh tab — write header + data together
+      const allRows = [headerRow, ...attendanceRows]
+      await sheets.spreadsheets.values.update({
+        spreadsheetId: SPREADSHEET_ID,
+        range: `'${tabName}'!A1:G${allRows.length}`,
+        valueInputOption: 'USER_ENTERED',
+        requestBody: { values: allRows },
+      })
+
+      // Clear trailing ghost rows (safe here since we wrote the header ourselves)
+      const startClearRow = allRows.length + 1
+      if (startClearRow <= 1000) {
+        await sheets.spreadsheets.values.clear({
+          spreadsheetId: SPREADSHEET_ID,
+          range: `'${tabName}'!A${startClearRow}:G1000`,
+        })
+      }
     }
 
     console.log(`[sync] ✅ Synced ${progress.last_name}, ${progress.first_name} to Sheets`)

@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getMyProfile } from '@/actions/students'
 import { Sidebar } from '@/components/ui/Sidebar'
 import { AdminHeader } from '@/components/ui/AdminHeader'
+import { SyncRefreshBanner } from '@/components/ui/SyncRefreshBanner'
 
 export default async function DashboardLayout({
   children,
@@ -28,6 +29,7 @@ export default async function DashboardLayout({
             {children}
           </div>
         </main>
+        <SyncRefreshBanner />
       </div>
     )
   }
@@ -40,6 +42,7 @@ export default async function DashboardLayout({
           {children}
         </div>
       </main>
+      <SyncRefreshBanner />
     </div>
   )
 }

@@ -1,11 +1,12 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
+import { syncStudentToSheets } from '@/lib/sync'
 
 // Helper to clean and convert DATE (MM/DD/YYYY, MM-DD-YY, or YYYY-MM-DD) → YYYY-MM-DD
-function parseDate(val: any): string | null {
+function parseDate(val: unknown): string | null {
   if (!val) return null
   const str = String(val).trim()
-  
+
   if (/^\d{4}-\d{2}-\d{2}$/.test(str)) return str
 
   // Match MM-DD-YY, MM/DD/YY, M/D/YYYY, etc.
@@ -33,7 +34,7 @@ function parseDate(val: any): string | null {
 }
 
 // Helper to convert time string (e.g. "8:00 AM", "17:30", "5:00 PM") → HH:MM:00
-function parseTime(val: any): string | null {
+function parseTime(val: unknown): string | null {
   if (!val) return null
   const str = String(val).trim().toUpperCase()
 
@@ -59,9 +60,22 @@ function parseTime(val: any): string | null {
   return null
 }
 
+/**
+ * Derives a BatSU school email from SR-Code or full name.
+ * Used when auto-provisioning an account for a student who is
+ * in the Sheet's Master tab but not yet in Supabase.
+ */
+function deriveEmail(srCode: string | null, firstName: string, lastName: string): string {
+  if (srCode) {
+    return `${srCode}@g.batstate-u.edu.ph`
+  }
+  const sanitized = `${firstName.toLowerCase().replace(/\s+/g, '')}.${lastName.toLowerCase().replace(/\s+/g, '')}`
+  return `${sanitized}@g.batstate-u.edu.ph`
+}
+
 interface SheetEdit {
   row: number
-  rowData: any[]
+  rowData: unknown[]
 }
 
 interface WebhookPayload {
@@ -92,27 +106,29 @@ export async function POST(request: Request) {
 
     for (const edit of edits) {
       const { row, rowData } = edit
-      if (!rowData || rowData.length === 0) continue
+      if (!rowData || (rowData as unknown[]).length === 0) continue
 
       if (isMasterSheet) {
         // ── MASTER SHEET UPDATE ─────────────────────────────────────
         // Columns A to K:
-        // A: Last Name, B: First Name, C: SR-Code, D: Email, E: Program, F: Req Hours, G: Rem Hours, H: Est Date, I: Act Date, J: Proj, K: Github
-        const lastName = String(rowData[0] || '').trim()
-        const firstName = String(rowData[1] || '').trim()
-        const srCode = String(rowData[2] || '').trim()
-        const email = String(rowData[3] || '').trim()
-        const program = String(rowData[4] || '').trim()
-        const requiredHours = Number(rowData[5]) || 486
-        const assignedProject = String(rowData[9] || '').trim()
-        const githubLink = String(rowData[10] || '').trim()
+        // A: Last Name, B: First Name, C: SR-Code, D: Email, E: Program
+        // F: Req Hours, G: Rem Hours (formula), H: Est Date, I: Act Date, J: Proj, K: Github
+        const rd = rowData as unknown[]
+        const lastName = String(rd[0] || '').trim()
+        const firstName = String(rd[1] || '').trim()
+        const srCode = String(rd[2] || '').trim() || null
+        const email = String(rd[3] || '').trim() || null
+        const program = String(rd[4] || '').trim()
+        const requiredHours = Number(rd[5]) || 486
+        const assignedProject = String(rd[9] || '').trim() || null
+        const githubLink = String(rd[10] || '').trim() || null
 
         if (!lastName || !firstName) {
           results.push(`Row ${row}: Skipped (missing last or first name)`)
           continue
         }
 
-        // Find existing student by SR-Code, Email, or Name
+        // Find existing student: SR-Code → Email → Name (in priority order)
         let student = null
         if (srCode) {
           const { data } = await supabase.from('students').select('*').eq('sr_code', srCode).maybeSingle()
@@ -131,34 +147,102 @@ export async function POST(request: Request) {
         }
 
         if (!student) {
-          results.push(`Row ${row}: Student not found in DB for ${lastName}, ${firstName}`)
+          // ── AUTO-PROVISION ──────────────────────────────────────────
+          // A supervisor added a new intern row to the Master sheet.
+          // Create a Supabase auth account + student profile automatically.
+          const derivedEmail = email || deriveEmail(srCode, firstName, lastName)
+          const defaultPassword = srCode ? `OJT-${srCode}` : 'BatSU-OJT-2026'
+
+          // Check if an auth user with this email already exists
+          const { data: listData } = await supabase.auth.admin.listUsers()
+          const existingAuth = listData?.users?.find(
+            (u) => u.email?.toLowerCase() === derivedEmail.toLowerCase()
+          )
+
+          let authUserId: string
+
+          if (existingAuth) {
+            authUserId = existingAuth.id
+            results.push(`Row ${row}: Found existing auth user for ${derivedEmail}`)
+          } else {
+            const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+              email: derivedEmail,
+              password: defaultPassword,
+              email_confirm: true,
+            })
+
+            if (authError || !authData?.user) {
+              results.push(`Row ${row}: ❌ Failed to create auth account for ${derivedEmail}: ${authError?.message}`)
+              continue
+            }
+            authUserId = authData.user.id
+            // Log the generated credentials so the admin can share them
+            console.log(`[webhook] 🔑 Auto-provisioned: ${derivedEmail} / ${defaultPassword}`)
+            results.push(`Row ${row}: ✅ Created account: ${derivedEmail} (password: ${defaultPassword})`)
+          }
+
+          const { data: newStudent, error: profileError } = await supabase
+            .from('students')
+            .insert({
+              auth_user_id: authUserId,
+              first_name: firstName,
+              last_name: lastName,
+              sr_code: srCode,
+              email: derivedEmail,
+              program: program || 'BSIT',
+              required_ojt_hours: requiredHours,
+              assigned_project: assignedProject,
+              github_link: githubLink,
+              role: 'student',
+            })
+            .select()
+            .single()
+
+          if (profileError || !newStudent) {
+            results.push(`Row ${row}: ❌ Failed to create student profile: ${profileError?.message}`)
+            continue
+          }
+
+          results.push(`Row ${row}: ✅ Auto-provisioned student ${lastName}, ${firstName}`)
+
+          // Write-back: push normalized data from DB → Sheet
+          syncStudentToSheets(newStudent.id).catch((e) =>
+            console.error(`[webhook] Write-back sync failed for new student ${newStudent.id}:`, e)
+          )
           continue
         }
 
-        // Update student fields
+        // Student found — update editable profile fields
         const { error: updateError } = await supabase
           .from('students')
           .update({
             last_name: lastName,
             first_name: firstName,
-            sr_code: srCode || null,
-            email: email || null,
+            sr_code: srCode,
+            email: email || student.email,
             program: program || student.program,
             required_ojt_hours: requiredHours,
-            assigned_project: assignedProject || null,
-            github_link: githubLink || null,
+            assigned_project: assignedProject,
+            github_link: githubLink,
           })
           .eq('id', student.id)
 
         if (updateError) {
-          results.push(`Row ${row}: Error updating student: ${updateError.message}`)
+          results.push(`Row ${row}: ❌ Error updating student: ${updateError.message}`)
         } else {
-          results.push(`Row ${row}: Updated student ${lastName}, ${firstName}`)
+          results.push(`Row ${row}: ✅ Updated student ${lastName}, ${firstName}`)
+
+          // Write-back: re-sync normalized DB data → Sheet.
+          // Apps Script installedOnEdit does NOT fire on Sheets API writes,
+          // so there is no infinite loop risk here.
+          syncStudentToSheets(student.id).catch((e) =>
+            console.error(`[webhook] Write-back sync failed for ${student.id}:`, e)
+          )
         }
 
       } else {
         // ── INDIVIDUAL STUDENT SHEET UPDATE ──────────────────────────
-        // Sheet name format: "LAST NAME, FIRST NAME" (or fuzzy version of it)
+        // Sheet tab name format: "LAST NAME, FIRST NAME"
         const parts = sheetName.split(',')
         const lastName = parts[0]?.trim()
         const firstName = parts[1]?.trim()
@@ -168,7 +252,7 @@ export async function POST(request: Request) {
           continue
         }
 
-        // Find student
+        // Find student by name
         const { data: student } = await supabase.from('students').select('id')
           .ilike('last_name', lastName)
           .ilike('first_name', firstName || '')
@@ -180,8 +264,9 @@ export async function POST(request: Request) {
         }
 
         // Individual sheet columns:
-        // A: Date, B: Day, C: Time In, D: Time Out, E: Hours, F: Planned Task, G: Accomplishment
-        const rawDate = rowData[0]
+        // A: Date, B: Day, C: Time In, D: Time Out, E: Hours (computed), F: Planned Task, G: Accomplishment
+        const rd = rowData as unknown[]
+        const rawDate = rd[0]
         const date = parseDate(rawDate)
 
         if (!date) {
@@ -189,12 +274,12 @@ export async function POST(request: Request) {
           continue
         }
 
-        const timeIn = parseTime(rowData[2])
-        const timeOut = parseTime(rowData[3])
-        const plannedTask = String(rowData[5] || '').trim()
-        const actualAccomplishment = String(rowData[6] || '').trim()
+        const timeIn = parseTime(rd[2])
+        const timeOut = parseTime(rd[3])
+        const plannedTask = String(rd[5] || '').trim() || null
+        const actualAccomplishment = String(rd[6] || '').trim() || null
 
-        // If Time In is cleared/empty, we delete the attendance log for this date
+        // If Time In is blank → treat as a delete for this date
         if (!timeIn) {
           const { error: deleteError } = await supabase
             .from('attendance_logs')
@@ -203,9 +288,14 @@ export async function POST(request: Request) {
             .eq('date', date)
 
           if (deleteError) {
-            results.push(`Sheet ${sheetName} Row ${row}: Error deleting log: ${deleteError.message}`)
+            results.push(`Sheet ${sheetName} Row ${row}: ❌ Error deleting log: ${deleteError.message}`)
           } else {
-            results.push(`Sheet ${sheetName} Row ${row}: Deleted attendance log for ${date}`)
+            results.push(`Sheet ${sheetName} Row ${row}: 🗑 Deleted attendance log for ${date}`)
+
+            // Write-back after delete so Sheet reflects the DB state
+            syncStudentToSheets(student.id).catch((e) =>
+              console.error(`[webhook] Write-back sync failed for ${student.id}:`, e)
+            )
           }
         } else {
           // Upsert attendance log
@@ -216,24 +306,31 @@ export async function POST(request: Request) {
               date,
               time_in: timeIn,
               time_out: timeOut || null,
-              planned_task: plannedTask || null,
-              actual_accomplishment: actualAccomplishment || null,
+              planned_task: plannedTask,
+              actual_accomplishment: actualAccomplishment,
             }, {
-              onConflict: 'student_id,date'
+              onConflict: 'student_id,date',
             })
 
           if (upsertError) {
-            results.push(`Sheet ${sheetName} Row ${row}: Error upserting log: ${upsertError.message}`)
+            results.push(`Sheet ${sheetName} Row ${row}: ❌ Error upserting log: ${upsertError.message}`)
           } else {
-            results.push(`Sheet ${sheetName} Row ${row}: Upserted log for ${date}`)
+            results.push(`Sheet ${sheetName} Row ${row}: ✅ Upserted log for ${date}`)
+
+            // Write-back: push normalized data back to Sheet.
+            // onEdit Apps Script does NOT fire for API writes → no loop.
+            syncStudentToSheets(student.id).catch((e) =>
+              console.error(`[webhook] Write-back sync failed for ${student.id}:`, e)
+            )
           }
         }
       }
     }
 
     return NextResponse.json({ success: true, results })
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : 'Server error'
     console.error('[webhook] Sheets webhook error:', error)
-    return NextResponse.json({ error: error?.message || 'Server error' }, { status: 500 })
+    return NextResponse.json({ error: msg }, { status: 500 })
   }
 }
