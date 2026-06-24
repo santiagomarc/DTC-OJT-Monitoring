@@ -1,5 +1,8 @@
 'use server'
 
+import { revalidatePath } from 'next/cache'
+import { z } from 'zod'
+import { syncStudentToSheets } from '@/lib/sync'
 import { createClient } from '@/lib/supabase/server'
 import type { Student, StudentProgress } from '@/types'
 
@@ -69,4 +72,52 @@ export async function getStudentProgressById(
     .single()
 
   return data as StudentProgress | null
+}
+
+const updateProfileSchema = z.object({
+  assigned_project: z.string().max(300).optional().or(z.literal('')),
+  github_link: z.string().url('Enter a valid URL').optional().or(z.literal('')),
+})
+
+/**
+ * Update the logged-in student's project and GitHub link.
+ */
+export async function updateStudentProfileAction(
+  formData: FormData
+): Promise<{ success?: boolean; error?: string }> {
+  const profile = await getMyProfile()
+  if (!profile) {
+    return { error: 'Unauthorized' }
+  }
+
+  const rawData = {
+    assigned_project: (formData.get('assigned_project') as string) || '',
+    github_link: (formData.get('github_link') as string) || '',
+  }
+
+  const result = updateProfileSchema.safeParse(rawData)
+  if (!result.success) {
+    return { error: result.error.issues[0].message }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('students')
+    .update({
+      assigned_project: result.data.assigned_project || null,
+      github_link: result.data.github_link || null,
+    })
+    .eq('id', profile.id)
+
+  if (error) return { error: error.message }
+
+  // Sync back to Google Sheets
+  try {
+    await syncStudentToSheets(profile.id)
+  } catch (e) {
+    console.error('[students] Sync after updateStudentProfileAction failed:', e)
+  }
+
+  revalidatePath('/dashboard')
+  return { success: true }
 }
