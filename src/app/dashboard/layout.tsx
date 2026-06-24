@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { getMyProfile } from '@/actions/students'
-import { Sidebar } from '@/components/ui/Sidebar'
+import { StudentHeader } from '@/components/ui/StudentHeader'
 import { AdminHeader } from '@/components/ui/AdminHeader'
 import { SyncRefreshBanner } from '@/components/ui/SyncRefreshBanner'
 
@@ -35,8 +35,8 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 dark:bg-gray-950">
-      <Sidebar profile={profile} />
+    <div className="flex min-h-screen flex-col bg-gray-50 dark:bg-gray-950">
+      <StudentHeader profile={profile} />
       <main className="flex-1 overflow-auto p-6 lg:p-8">
         <div className="mx-auto max-w-5xl">
           {children}

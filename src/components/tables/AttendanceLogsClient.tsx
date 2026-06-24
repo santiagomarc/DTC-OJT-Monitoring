@@ -2,7 +2,7 @@
 
 import { useState, useActionState, useTransition, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, X, Check } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Check, Clock, Calendar, BookOpen, ClipboardCheck } from 'lucide-react'
 import { createAttendanceLog, updateAttendanceLog, deleteAttendanceLog } from '@/actions/attendance'
 import type { AttendanceLog, ActionResult } from '@/types'
 
@@ -55,7 +55,6 @@ function AttendanceForm({
 
   const lastProcessedRef = useRef<ActionResult>(emptyState)
 
-  // If success, bubble up
   useEffect(() => {
     if (state === lastProcessedRef.current) return
     if (state.success && state.data) {
@@ -75,84 +74,93 @@ function AttendanceForm({
   return (
     <form
       action={formAction}
-      className="rounded-xl border border-violet-200 bg-violet-50 dark:border-violet-500/30 dark:bg-violet-500/5 p-5 space-y-4"
+      className="rounded-2xl border border-violet-200/80 bg-violet-50/40 p-6 dark:border-violet-500/20 dark:bg-violet-950/20 backdrop-blur-md shadow-sm space-y-4 transition-all duration-300"
     >
-      <h3 className="text-sm font-semibold text-gray-900 dark:text-white">
-        {isEdit ? 'Edit Entry' : 'New Attendance Entry'}
-      </h3>
+      <div className="flex items-center justify-between border-b border-violet-100 dark:border-violet-500/10 pb-3">
+        <h3 className="text-sm font-bold text-gray-900 dark:text-white uppercase tracking-wider">
+          {isEdit ? 'Edit Attendance Entry' : 'Log New Attendance'}
+        </h3>
+        <button
+          type="button"
+          onClick={onCancel}
+          className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-white/5 transition"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
-          <label className="label">Date</label>
+          <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-1.5">Date</label>
           <input
             name="date"
             type="date"
             required
             defaultValue={defaultValues?.date ?? new Date().toISOString().split('T')[0]}
-            className="input"
+            className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-white/10 dark:bg-gray-950/40 dark:text-white"
           />
         </div>
         <div>
-          <label className="label">Time In</label>
+          <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-1.5">Time In</label>
           <input
             name="time_in"
             type="time"
             required
             defaultValue={defaultValues?.time_in?.slice(0, 5) ?? '08:00'}
-            className="input"
+            className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-white/10 dark:bg-gray-950/40 dark:text-white"
           />
         </div>
         <div>
-          <label className="label">Time Out</label>
+          <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-1.5">Time Out</label>
           <input
             name="time_out"
             type="time"
             defaultValue={defaultValues?.time_out?.slice(0, 5) ?? ''}
-            className="input"
+            className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-white/10 dark:bg-gray-950/40 dark:text-white"
           />
-          <p className="mt-1 text-xs text-gray-500">Leave blank if still in progress</p>
+          <p className="mt-1 text-[10px] text-gray-400">Leave blank if still in progress</p>
         </div>
       </div>
 
       <div>
-        <label className="label">Planned Task / Activities</label>
+        <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-1.5">Planned Task / Activities</label>
         <textarea
           name="planned_task"
           rows={2}
           defaultValue={defaultValues?.planned_task ?? ''}
-          className="input resize-none"
-          placeholder="What do you plan to work on today?"
+          className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-white/10 dark:bg-gray-950/40 dark:text-white resize-none"
+          placeholder="What do you plan to work on?"
         />
       </div>
 
       <div>
-        <label className="label">Actual Accomplishment</label>
+        <label className="text-[11px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400 block mb-1.5">Actual Accomplishment</label>
         <textarea
           name="actual_accomplishment"
           rows={2}
           defaultValue={defaultValues?.actual_accomplishment ?? ''}
-          className="input resize-none"
+          className="w-full rounded-xl border border-gray-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-violet-500 focus:ring-1 focus:ring-violet-500 dark:border-white/10 dark:bg-gray-950/40 dark:text-white resize-none"
           placeholder="What did you actually accomplish?"
         />
       </div>
 
       {state.error && (
-        <p className="text-sm text-red-400">{state.error}</p>
+        <p className="text-xs font-semibold text-red-500 dark:text-red-400">{state.error}</p>
       )}
 
-      <div className="flex gap-3">
+      <div className="flex gap-3 pt-2">
         <button
           type="submit"
           disabled={isPending}
-          className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-violet-500 disabled:opacity-60"
+          className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
         >
           <Check className="h-4 w-4" />
-          {isPending ? 'Saving…' : 'Save'}
+          {isPending ? 'Saving…' : 'Save Entry'}
         </button>
         <button
           type="button"
           onClick={onCancel}
-          className="flex items-center gap-2 rounded-xl border border-gray-200 dark:border-white/10 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-400 transition hover:bg-gray-100 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
+          className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-gray-900 px-4 py-2 text-sm font-semibold text-gray-600 dark:text-gray-400 transition hover:bg-gray-50 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white"
         >
           <X className="h-4 w-4" />
           Cancel
@@ -171,13 +179,13 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
   function handleCreated(log: AttendanceLog) {
     setLogs((prev) => [log, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
     setShowForm(false)
-    toast.success('Attendance entry saved!')
+    toast.success('Attendance entry logged successfully!')
   }
 
   function handleUpdated(log: AttendanceLog) {
     setLogs((prev) => prev.map((l) => (l.id === log.id ? log : l)))
     setEditId(null)
-    toast.success('Entry updated!')
+    toast.success('Attendance entry updated!')
   }
 
   function handleDelete(logId: string) {
@@ -188,7 +196,7 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
       const result = await deleteAttendanceLog(logId)
       if (result.success) {
         setLogs((prev) => prev.filter((l) => l.id !== logId))
-        toast.success('Entry deleted.')
+        toast.success('Entry deleted successfully.')
       } else {
         toast.error(result.error ?? 'Failed to delete')
       }
@@ -196,124 +204,218 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
   }
 
   return (
-    <div className="space-y-4">
-      {/* Add button */}
-      {!showForm && (
-        <button
-          onClick={() => setShowForm(true)}
-          className="flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-violet-500/20 transition hover:bg-violet-500"
-        >
-          <Plus className="h-4 w-4" />
-          Log Attendance
-        </button>
-      )}
+    <div className="space-y-6">
+      {/* Header and Toggle */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-gray-250/20 dark:border-white/5 pb-4">
+        <div>
+          <h2 className="text-lg font-black text-gray-900 dark:text-white uppercase tracking-wider">Attendance Logs</h2>
+          <p className="text-xs text-gray-500 dark:text-gray-400">Log and manage your daily hours and activity outputs</p>
+        </div>
+        {!showForm && (
+          <button
+            onClick={() => setShowForm(true)}
+            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+          >
+            <Plus className="h-4 w-4" />
+            Log Attendance
+          </button>
+        )}
+      </div>
 
       {/* Create form */}
       {showForm && (
-        <AttendanceForm
-          onCancel={() => setShowForm(false)}
-          onSuccess={handleCreated}
-        />
+        <div className="animate-in fade-in slide-in-from-top-4 duration-300">
+          <AttendanceForm
+            onCancel={() => setShowForm(false)}
+            onSuccess={handleCreated}
+          />
+        </div>
       )}
 
       {/* Logs list */}
       {logs.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-gray-200 dark:border-white/10 p-12 text-center">
-          <p className="text-gray-500">No attendance entries yet.</p>
-          <p className="mt-1 text-sm text-gray-600">Click &quot;Log Attendance&quot; to get started.</p>
+        <div className="rounded-2xl border-2 border-dashed border-gray-200 dark:border-white/5 p-12 text-center">
+          <Clock className="h-8 w-8 text-gray-400 dark:text-gray-600 mx-auto mb-3" />
+          <p className="text-sm font-bold text-gray-550 dark:text-gray-400">No attendance entries logged yet.</p>
+          <p className="mt-1 text-xs text-gray-450 dark:text-gray-500">Get started by clicking &quot;Log Attendance&quot;.</p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {logs.map((log) =>
-            editId === log.id ? (
-              <AttendanceForm
-                key={log.id}
-                logId={log.id}
-                defaultValues={log}
-                onCancel={() => setEditId(null)}
-                onSuccess={handleUpdated}
-              />
-            ) : (
-              <LogCard
-                key={log.id}
-                log={log}
-                onEdit={() => setEditId(log.id)}
-                onDelete={() => handleDelete(log.id)}
-                isDeleting={isPending}
-              />
-            )
-          )}
-        </div>
-      )}
-    </div>
-  )
-}
-
-function LogCard({
-  log,
-  onEdit,
-  onDelete,
-  isDeleting,
-}: {
-  log: AttendanceLog
-  onEdit: () => void
-  onDelete: () => void
-  isDeleting: boolean
-}) {
-  return (
-    <div className="rounded-xl border border-gray-200 bg-white dark:border-white/10 dark:bg-white/5 p-5 transition hover:border-gray-300 dark:hover:border-white/20 shadow-sm">
-      <div className="flex items-start justify-between gap-4">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-3 mb-3">
-            <span className="text-sm font-semibold text-gray-900 dark:text-white">{formatDate(log.date)}</span>
-            <span className="text-xs text-gray-500">
-              {formatTime(log.time_in)} → {formatTime(log.time_out)}
-            </span>
-            {log.total_hours != null && (
-              <span className="rounded-full bg-violet-500/20 px-2 py-0.5 text-xs font-medium text-violet-300">
-                {Number(log.total_hours).toFixed(2)}h
-              </span>
-            )}
-            {log.time_out == null && (
-              <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-xs font-medium text-amber-300">
-                In Progress
-              </span>
-            )}
+        <div className="space-y-4">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full border-separate border-spacing-y-3">
+              <thead>
+                <tr className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500 select-none">
+                  <th className="px-5 py-2 text-left">Date</th>
+                  <th className="px-5 py-2 text-left">Time Session</th>
+                  <th className="px-5 py-2 text-left">Hours</th>
+                  <th className="px-5 py-2 text-left max-w-[200px]">Planned Task</th>
+                  <th className="px-5 py-2 text-left max-w-[250px]">Accomplished</th>
+                  <th className="px-5 py-2 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {logs.map((log) =>
+                  editId === log.id ? (
+                    <tr key={log.id}>
+                      <td colSpan={6} className="p-0">
+                        <div className="py-2 animate-in fade-in duration-200">
+                          <AttendanceForm
+                            logId={log.id}
+                            defaultValues={log}
+                            onCancel={() => setEditId(null)}
+                            onSuccess={handleUpdated}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ) : (
+                    <tr
+                      key={log.id}
+                      className="group rounded-2xl bg-white dark:bg-gray-900/40 backdrop-blur-md transition-all duration-300 hover:translate-x-0.5 hover:shadow-md border border-transparent hover:border-gray-200/80 dark:hover:border-white/10"
+                    >
+                      <td className="px-5 py-4 first:rounded-l-2xl border-y border-l border-gray-200/60 dark:border-white/5 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="h-4 w-4 text-violet-500" />
+                          <span className="font-bold text-gray-900 dark:text-white text-sm">{formatDate(log.date)}</span>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 border-y border-gray-200/60 dark:border-white/5 whitespace-nowrap">
+                        <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400">
+                          <span>{formatTime(log.time_in)}</span>
+                          <span>→</span>
+                          {log.time_out ? (
+                            <span>{formatTime(log.time_out)}</span>
+                          ) : (
+                            <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] text-amber-500 dark:text-amber-400 font-bold border border-amber-500/20">Active</span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 border-y border-gray-200/60 dark:border-white/5 whitespace-nowrap">
+                        {log.total_hours != null ? (
+                          <span className="rounded-xl bg-violet-500/15 border border-violet-500/20 px-2.5 py-1 text-xs font-extrabold text-violet-600 dark:text-violet-400">
+                            {Number(log.total_hours).toFixed(2)}h
+                          </span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-4 border-y border-gray-200/60 dark:border-white/5 max-w-[200px]">
+                        <div className="flex items-start gap-1.5">
+                          <BookOpen className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" />
+                          <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2" title={log.planned_task ?? undefined}>
+                            {log.planned_task ?? <span className="italic text-gray-400">No task planned</span>}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 border-y border-gray-200/60 dark:border-white/5 max-w-[250px]">
+                        <div className="flex items-start gap-1.5">
+                          <ClipboardCheck className="h-3.5 w-3.5 text-gray-400 mt-0.5 shrink-0" />
+                          <p className="text-xs text-gray-600 dark:text-gray-300 line-clamp-2" title={log.actual_accomplishment ?? undefined}>
+                            {log.actual_accomplishment ?? <span className="italic text-gray-400">No details provided</span>}
+                          </p>
+                        </div>
+                      </td>
+                      <td className="px-5 py-4 last:rounded-r-2xl border-y border-r border-gray-200/60 dark:border-white/5 text-right whitespace-nowrap">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setEditId(log.id)}
+                            className="rounded-lg p-2 text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-white/5 hover:text-gray-900 dark:hover:text-white transition"
+                            title="Edit Log"
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(log.id)}
+                            disabled={isPending}
+                            className="rounded-lg p-2 text-gray-400 hover:bg-red-500/10 hover:text-red-500 dark:text-gray-500 dark:hover:bg-red-500/20 dark:hover:text-red-400 transition disabled:opacity-50"
+                            title="Delete Log"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                )}
+              </tbody>
+            </table>
           </div>
 
-          {log.planned_task && (
-            <div className="mb-2">
-              <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Planned</p>
-              <p className="mt-0.5 text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{log.planned_task}</p>
-            </div>
-          )}
-          {log.actual_accomplishment && (
-            <div>
-              <p className="text-xs font-medium uppercase tracking-wider text-gray-500">Accomplished</p>
-              <p className="mt-0.5 text-sm text-gray-700 dark:text-gray-300 line-clamp-2">{log.actual_accomplishment}</p>
-            </div>
-          )}
-        </div>
+          {/* Mobile Card List View */}
+          <div className="grid grid-cols-1 gap-4 md:hidden">
+            {logs.map((log) =>
+              editId === log.id ? (
+                <div key={log.id} className="animate-in fade-in duration-200">
+                  <AttendanceForm
+                    logId={log.id}
+                    defaultValues={log}
+                    onCancel={() => setEditId(null)}
+                    onSuccess={handleUpdated}
+                  />
+                </div>
+              ) : (
+                <div
+                  key={log.id}
+                  className="rounded-2xl border border-gray-200/80 bg-white p-5 dark:border-white/10 dark:bg-gray-900/40 backdrop-blur-md shadow-sm transition hover:shadow-md"
+                >
+                  <div className="flex items-start justify-between gap-4 mb-3 border-b border-gray-100 dark:border-white/5 pb-2.5">
+                    <div>
+                      <span className="font-bold text-gray-900 dark:text-white text-sm">{formatDate(log.date)}</span>
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold text-gray-500 dark:text-gray-400 mt-0.5">
+                        <span>{formatTime(log.time_in)}</span>
+                        <span>→</span>
+                        {log.time_out ? (
+                          <span>{formatTime(log.time_out)}</span>
+                        ) : (
+                          <span className="text-amber-500 dark:text-amber-400">In Progress</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      {log.total_hours != null && (
+                        <span className="rounded-xl bg-violet-500/10 border border-violet-500/20 px-2 py-0.5 text-xs font-bold text-violet-600 dark:text-violet-400">
+                          {Number(log.total_hours).toFixed(1)}h
+                        </span>
+                      )}
+                      
+                      <button
+                        onClick={() => setEditId(log.id)}
+                        className="rounded-lg p-1.5 text-gray-400 hover:bg-gray-100 dark:text-gray-500 dark:hover:bg-white/5 transition"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(log.id)}
+                        disabled={isPending}
+                        className="rounded-lg p-1.5 text-gray-400 hover:bg-red-500/10 hover:text-red-500 dark:text-gray-550 transition disabled:opacity-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
 
-        {/* Actions */}
-        <div className="flex shrink-0 gap-2">
-          <button
-            onClick={onEdit}
-            className="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 dark:hover:bg-white/10 hover:text-gray-900 dark:hover:text-white"
-            title="Edit"
-          >
-            <Pencil className="h-4 w-4" />
-          </button>
-          <button
-            onClick={onDelete}
-            disabled={isDeleting}
-            className="rounded-lg p-2 text-gray-500 transition hover:bg-red-500/10 hover:text-red-400 disabled:opacity-50"
-            title="Delete"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
+                  <div className="space-y-2">
+                    {log.planned_task && (
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">Planned</span>
+                        <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5">{log.planned_task}</p>
+                      </div>
+                    )}
+                    {log.actual_accomplishment && (
+                      <div>
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-400 block">Accomplished</span>
+                        <p className="text-xs text-gray-700 dark:text-gray-300 mt-0.5">{log.actual_accomplishment}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
