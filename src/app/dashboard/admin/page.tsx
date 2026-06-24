@@ -37,28 +37,28 @@ export default async function AdminDashboardPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold text-white">Master Dashboard</h1>
-        <p className="mt-1 text-sm text-gray-400">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Master Dashboard</h1>
+        <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
           Overview of all OJT interns at the Digital Transformation Center
         </p>
       </div>
 
       {/* Summary stats */}
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
-          <p className="text-sm text-gray-400">Total Interns</p>
-          <p className="mt-1 text-3xl font-bold text-white">{students.length}</p>
+        <div className="card">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Total Interns</p>
+          <p className="mt-1 text-3xl font-bold text-gray-900 dark:text-white">{students.length}</p>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
-          <p className="text-sm text-gray-400">Avg. Progress</p>
-          <p className="mt-1 text-3xl font-bold text-violet-400">
+        <div className="card">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Avg. Progress</p>
+          <p className="mt-1 text-3xl font-bold text-violet-600 dark:text-violet-400">
             {avgProgress.toFixed(1)}%
           </p>
         </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-5">
-          <p className="text-sm text-gray-400">Needs Attention</p>
-          <p className="mt-1 text-3xl font-bold text-amber-400">{behindCount}</p>
-          <p className="text-xs text-gray-500">completion &gt;7 days out</p>
+        <div className="card">
+          <p className="text-sm text-gray-500 dark:text-gray-400">Needs Attention</p>
+          <p className="mt-1 text-3xl font-bold text-amber-600 dark:text-amber-400">{behindCount}</p>
+          <p className="text-xs text-gray-400 dark:text-gray-500">completion &gt;7 days out</p>
         </div>
       </div>
 
