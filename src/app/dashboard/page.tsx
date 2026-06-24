@@ -62,7 +62,7 @@ export default async function StudentDashboardPage() {
       {/* Internship Details Cards (Project & GitHub Link above stat boxes) */}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
         {/* Project Card */}
-        <div className="group relative rounded-2xl border border-gray-200/80 bg-white/70 p-6 dark:border-white/10 dark:bg-gray-900/40 backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+        <div className="group relative overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 p-6 dark:border-white/10 dark:bg-gray-900/40 backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
           <div className="flex items-start justify-between gap-4">
             <div className="space-y-2">
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
@@ -83,7 +83,7 @@ export default async function StudentDashboardPage() {
         </div>
 
         {/* GitHub Card */}
-        <div className="group relative rounded-2xl border border-gray-200/80 bg-white/70 p-6 dark:border-white/10 dark:bg-gray-900/40 backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
+        <div className="group relative overflow-hidden rounded-2xl border border-gray-200/80 bg-white/70 p-6 dark:border-white/10 dark:bg-gray-900/40 backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
           <div className="flex items-start justify-between gap-4">
             <div className="min-w-0 flex-1 space-y-2">
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500">
