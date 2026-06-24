@@ -48,9 +48,11 @@ export async function editInternAction(formData: FormData): Promise<{ success?: 
   if (error) return { error: error.message }
 
   // Sync the updated profile back to Google Sheets
-  syncStudentToSheets(result.data.studentId).catch((e) =>
+  try {
+    await syncStudentToSheets(result.data.studentId)
+  } catch (e) {
     console.error('[admin] Sync after editIntern failed:', e)
-  )
+  }
 
   revalidatePath('/dashboard/admin')
   revalidatePath(`/dashboard/admin/${result.data.studentId}`)
@@ -112,9 +114,11 @@ export async function addManualLogAction(formData: FormData): Promise<{ success?
   }
 
   // Sync the updated logs to Google Sheets
-  syncStudentToSheets(result.data.studentId).catch((e) =>
+  try {
+    await syncStudentToSheets(result.data.studentId)
+  } catch (e) {
     console.error('[admin] Sync after addManualLog failed:', e)
-  )
+  }
 
   revalidatePath('/dashboard/admin')
   revalidatePath(`/dashboard/admin/${result.data.studentId}`)

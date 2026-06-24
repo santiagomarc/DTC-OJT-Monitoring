@@ -206,9 +206,11 @@ export async function POST(request: Request) {
           results.push(`Row ${row}: ✅ Auto-provisioned student ${lastName}, ${firstName}`)
 
           // Write-back: push normalized data from DB → Sheet
-          syncStudentToSheets(newStudent.id).catch((e) =>
+          try {
+            await syncStudentToSheets(newStudent.id)
+          } catch (e) {
             console.error(`[webhook] Write-back sync failed for new student ${newStudent.id}:`, e)
-          )
+          }
           continue
         }
 
@@ -235,9 +237,11 @@ export async function POST(request: Request) {
           // Write-back: re-sync normalized DB data → Sheet.
           // Apps Script installedOnEdit does NOT fire on Sheets API writes,
           // so there is no infinite loop risk here.
-          syncStudentToSheets(student.id).catch((e) =>
+          try {
+            await syncStudentToSheets(student.id)
+          } catch (e) {
             console.error(`[webhook] Write-back sync failed for ${student.id}:`, e)
-          )
+          }
         }
 
       } else {
@@ -293,9 +297,11 @@ export async function POST(request: Request) {
             results.push(`Sheet ${sheetName} Row ${row}: 🗑 Deleted attendance log for ${date}`)
 
             // Write-back after delete so Sheet reflects the DB state
-            syncStudentToSheets(student.id).catch((e) =>
+            try {
+              await syncStudentToSheets(student.id)
+            } catch (e) {
               console.error(`[webhook] Write-back sync failed for ${student.id}:`, e)
-            )
+            }
           }
         } else {
           // Upsert attendance log
@@ -319,9 +325,11 @@ export async function POST(request: Request) {
 
             // Write-back: push normalized data back to Sheet.
             // onEdit Apps Script does NOT fire for API writes → no loop.
-            syncStudentToSheets(student.id).catch((e) =>
+            try {
+              await syncStudentToSheets(student.id)
+            } catch (e) {
               console.error(`[webhook] Write-back sync failed for ${student.id}:`, e)
-            )
+            }
           }
         }
       }

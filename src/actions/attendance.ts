@@ -72,10 +72,12 @@ export async function createAttendanceLog(
     return { success: false, error: error.message }
   }
 
-  // Sync to Sheets in the background (non-blocking)
-  syncStudentToSheets(studentId).catch((e) =>
-    console.error('[sync] Background sync failed:', e)
-  )
+  // Sync to Sheets
+  try {
+    await syncStudentToSheets(studentId)
+  } catch (e) {
+    console.error('[sync] Sync failed:', e)
+  }
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/logs')
@@ -125,9 +127,12 @@ export async function updateAttendanceLog(
 
   if (error) return { success: false, error: error.message }
 
-  syncStudentToSheets(studentId).catch((e) =>
-    console.error('[sync] Background sync failed:', e)
-  )
+  // Sync to Sheets
+  try {
+    await syncStudentToSheets(studentId)
+  } catch (e) {
+    console.error('[sync] Sync failed:', e)
+  }
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/logs')
@@ -152,9 +157,12 @@ export async function deleteAttendanceLog(
 
   if (error) return { success: false, error: error.message }
 
-  syncStudentToSheets(studentId).catch((e) =>
-    console.error('[sync] Background sync failed:', e)
-  )
+  // Sync to Sheets
+  try {
+    await syncStudentToSheets(studentId)
+  } catch (e) {
+    console.error('[sync] Sync failed:', e)
+  }
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/logs')
