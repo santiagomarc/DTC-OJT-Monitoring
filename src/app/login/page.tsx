@@ -21,7 +21,7 @@ export default function LoginPage() {
             🎓
           </div>
           <h1 className="text-3xl font-black tracking-tight text-gray-900 dark:text-white">
-            BatSU OJT Monitor
+            DTC OJT Monitoring System
           </h1>
           <p className="mt-2 text-sm font-medium text-gray-500 dark:text-gray-400">
             Digital Transformation Center
