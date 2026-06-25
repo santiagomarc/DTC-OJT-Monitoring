@@ -49,7 +49,37 @@ export async function createAttendanceLog(
     return { success: false, error: parsed.error.issues[0].message }
   }
 
+  const photoFile = formData.get('photo') as File | null
+  let photoUrl = null
+
   const supabase = await createClient()
+
+  if (photoFile && photoFile.size > 0) {
+    if (photoFile.size > 5 * 1024 * 1024) {
+      return { success: false, error: 'Photo size cannot exceed 5MB.' }
+    }
+    if (!photoFile.type.startsWith('image/')) {
+      return { success: false, error: 'Only image files are allowed.' }
+    }
+
+    const fileExt = photoFile.name.split('.').pop()
+    const fileName = `${studentId}/${Date.now()}.${fileExt}`
+    const { error: uploadError } = await supabase.storage
+      .from('attendance_photos')
+      .upload(fileName, photoFile, {
+        contentType: photoFile.type,
+        upsert: true,
+      })
+    if (uploadError) {
+      return { success: false, error: `Failed to upload photo: ${uploadError.message}` }
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('attendance_photos')
+      .getPublicUrl(fileName)
+    photoUrl = publicUrl
+  }
+
   const { data, error } = await supabase
     .from('attendance_logs')
     .insert({
@@ -61,6 +91,7 @@ export async function createAttendanceLog(
         : null,
       planned_task: parsed.data.planned_task || null,
       actual_accomplishment: parsed.data.actual_accomplishment || null,
+      photo_url: photoUrl,
     })
     .select()
     .single()
@@ -108,18 +139,57 @@ export async function updateAttendanceLog(
     return { success: false, error: parsed.error.issues[0].message }
   }
 
+  const photoFile = formData.get('photo') as File | null
+  const removePhoto = formData.get('remove_photo') === 'true'
+  let photoUrl = null
+
   const supabase = await createClient()
+
+  if (photoFile && photoFile.size > 0) {
+    if (photoFile.size > 5 * 1024 * 1024) {
+      return { success: false, error: 'Photo size cannot exceed 5MB.' }
+    }
+    if (!photoFile.type.startsWith('image/')) {
+      return { success: false, error: 'Only image files are allowed.' }
+    }
+
+    const fileExt = photoFile.name.split('.').pop()
+    const fileName = `${studentId}/${Date.now()}.${fileExt}`
+    const { error: uploadError } = await supabase.storage
+      .from('attendance_photos')
+      .upload(fileName, photoFile, {
+        contentType: photoFile.type,
+        upsert: true,
+      })
+    if (uploadError) {
+      return { success: false, error: `Failed to upload photo: ${uploadError.message}` }
+    }
+
+    const { data: { publicUrl } } = supabase.storage
+      .from('attendance_photos')
+      .getPublicUrl(fileName)
+    photoUrl = publicUrl
+  }
+
+  const updatePayload: any = {
+    date: parsed.data.date,
+    time_in: parsed.data.time_in + ':00',
+    time_out: parsed.data.time_out
+      ? parsed.data.time_out + ':00'
+      : null,
+    planned_task: parsed.data.planned_task || null,
+    actual_accomplishment: parsed.data.actual_accomplishment || null,
+  }
+
+  if (removePhoto) {
+    updatePayload.photo_url = null
+  } else if (photoUrl) {
+    updatePayload.photo_url = photoUrl
+  }
+
   const { data, error } = await supabase
     .from('attendance_logs')
-    .update({
-      date: parsed.data.date,
-      time_in: parsed.data.time_in + ':00',
-      time_out: parsed.data.time_out
-        ? parsed.data.time_out + ':00'
-        : null,
-      planned_task: parsed.data.planned_task || null,
-      actual_accomplishment: parsed.data.actual_accomplishment || null,
-    })
+    .update(updatePayload)
     .eq('id', logId)
     .eq('student_id', studentId) // RLS double-check
     .select()

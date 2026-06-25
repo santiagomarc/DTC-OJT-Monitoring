@@ -2,7 +2,7 @@
 
 import { useState, useActionState, useTransition, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, X, Check, Clock, Calendar, BookOpen, ClipboardCheck } from 'lucide-react'
+import { Plus, Pencil, Trash2, X, Check, Clock, Calendar, BookOpen, ClipboardCheck, Eye } from 'lucide-react'
 import { createAttendanceLog, updateAttendanceLog, deleteAttendanceLog } from '@/actions/attendance'
 import type { AttendanceLog, ActionResult } from '@/types'
 
@@ -118,7 +118,7 @@ function AttendanceForm({
             defaultValue={defaultValues?.time_out?.slice(0, 5) ?? ''}
             className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white"
           />
-          <p className="mt-1 text-[10px] text-stone-400">Leave blank if still in progress</p>
+          <p className="mt-1 text-[10px] text-stone-450">Leave blank if still in progress</p>
         </div>
       </div>
 
@@ -142,6 +142,38 @@ function AttendanceForm({
           className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white resize-none"
           placeholder="What did you actually accomplish?"
         />
+      </div>
+
+      <div>
+        <label className="text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400 block mb-1.5">Documentation / Photo</label>
+        {defaultValues?.photo_url && (
+          <div className="mb-3 flex items-center gap-3">
+            <img
+              src={defaultValues.photo_url}
+              alt="Current documentation"
+              className="h-16 w-16 rounded-xl object-cover border border-stone-200 dark:border-white/10"
+            />
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] text-stone-500 dark:text-stone-400">Current photo uploaded</span>
+              <label className="flex items-center gap-1.5 text-xs text-red-500 cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  name="remove_photo"
+                  value="true"
+                  className="rounded border-stone-300 text-red-700 focus:ring-red-500"
+                />
+                <span>Remove current photo</span>
+              </label>
+            </div>
+          </div>
+        )}
+        <input
+          name="photo"
+          type="file"
+          accept="image/*"
+          className="w-full text-xs text-stone-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-red-50 file:text-red-750 hover:file:bg-red-100 dark:file:bg-red-950/40 dark:file:text-red-400 dark:hover:file:bg-red-900/40"
+        />
+        <p className="mt-1 text-[10px] text-stone-450 dark:text-stone-500">Max size: 5MB (Optional)</p>
       </div>
 
       {state.error && (
@@ -174,6 +206,7 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
   const [logs, setLogs] = useState<AttendanceLog[]>(initialLogs)
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
+  const [selectedLog, setSelectedLog] = useState<AttendanceLog | null>(null)
   const [isPending, startTransition] = useTransition()
 
   function handleCreated(log: AttendanceLog) {
@@ -319,6 +352,13 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
                       <td className="px-5 py-4 last:rounded-r-2xl border-y border-r border-stone-200/60 dark:border-white/5 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-2">
                           <button
+                            onClick={() => setSelectedLog(log)}
+                            className="rounded-lg p-2 text-stone-400 hover:bg-stone-100 dark:text-stone-500 dark:hover:bg-white/5 hover:text-stone-900 dark:hover:text-white transition"
+                            title="View Details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </button>
+                          <button
                             onClick={() => setEditId(log.id)}
                             className="rounded-lg p-2 text-stone-400 hover:bg-stone-100 dark:text-stone-500 dark:hover:bg-white/5 hover:text-stone-900 dark:hover:text-white transition"
                             title="Edit Log"
@@ -381,6 +421,13 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
                       )}
                       
                       <button
+                        onClick={() => setSelectedLog(log)}
+                        className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 dark:text-stone-500 dark:hover:bg-white/5 transition"
+                        title="View Details"
+                      >
+                        <Eye className="h-3.5 w-3.5" />
+                      </button>
+                      <button
                         onClick={() => setEditId(log.id)}
                         className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 dark:text-stone-500 dark:hover:bg-white/5 transition"
                       >
@@ -413,6 +460,92 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
                 </div>
               )
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Detailed Modal */}
+      {selectedLog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="w-full max-w-xl rounded-3xl border border-stone-200 bg-white p-6 shadow-xl dark:border-white/10 dark:bg-stone-900 animate-in zoom-in-95 duration-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-stone-100 dark:border-white/5 pb-4 mb-4">
+              <div>
+                <h3 className="text-base font-black text-stone-900 dark:text-white uppercase tracking-wider">Attendance Log Details</h3>
+                <p className="text-xs text-stone-500 dark:text-stone-400">Detailed overview of attendance session</p>
+              </div>
+              <button
+                onClick={() => setSelectedLog(null)}
+                className="rounded-xl p-2 text-stone-400 hover:bg-stone-100 dark:text-stone-500 dark:hover:bg-white/5 hover:text-stone-900 dark:hover:text-white transition"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-4 rounded-2xl bg-stone-50 p-4 dark:bg-stone-950/40">
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block mb-0.5">Date</span>
+                  <span className="text-sm font-bold text-stone-900 dark:text-white">{formatDate(selectedLog.date)}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block mb-0.5">Time Session</span>
+                  <span className="text-sm font-semibold text-stone-900 dark:text-white">
+                    {formatTime(selectedLog.time_in)} → {selectedLog.time_out ? formatTime(selectedLog.time_out) : 'In Progress'}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-stone-400 block mb-0.5">Total Hours</span>
+                  {selectedLog.total_hours != null ? (
+                    <span className="rounded-xl bg-red-500/15 border border-red-500/20 px-2.5 py-1 text-xs font-extrabold text-red-600 dark:text-red-400">
+                      {Number(selectedLog.total_hours).toFixed(2)}h
+                    </span>
+                  ) : (
+                    <span className="text-stone-400">—</span>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-1">Planned Task / Activities</h4>
+                <div className="rounded-2xl border border-stone-200/60 bg-white/50 p-4 dark:border-white/5 dark:bg-stone-950/20">
+                  <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed whitespace-pre-wrap">
+                    {selectedLog.planned_task || <span className="italic text-stone-400">No task planned</span>}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-1">Actual Accomplishment</h4>
+                <div className="rounded-2xl border border-stone-200/60 bg-white/50 p-4 dark:border-white/5 dark:bg-stone-950/20">
+                  <p className="text-sm text-stone-700 dark:text-stone-300 leading-relaxed whitespace-pre-wrap">
+                    {selectedLog.actual_accomplishment || <span className="italic text-stone-400">No details provided</span>}
+                  </p>
+                </div>
+              </div>
+
+              {selectedLog.photo_url && (
+                <div>
+                  <h4 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-1.5">Documentation Photo</h4>
+                  <div className="relative overflow-hidden rounded-2xl border border-stone-200 dark:border-white/10 max-h-[300px] flex items-center justify-center bg-stone-50 dark:bg-stone-950/20">
+                    <img
+                      src={selectedLog.photo_url}
+                      alt="Documentation"
+                      className="max-h-[280px] w-auto object-contain py-2"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-3 pt-6 border-t border-stone-100 dark:border-white/5 mt-6">
+              <button
+                type="button"
+                onClick={() => setSelectedLog(null)}
+                className="rounded-xl border border-stone-200 bg-white dark:border-white/10 dark:bg-stone-900 px-5 py-2 text-sm font-semibold text-stone-600 dark:text-stone-400 transition hover:bg-stone-50 dark:hover:bg-white/5 hover:text-stone-900 dark:hover:text-white"
+              >
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

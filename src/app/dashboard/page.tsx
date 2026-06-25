@@ -69,15 +69,33 @@ export default async function StudentDashboardPage() {
                 <Briefcase className="h-3.5 w-3.5 text-red-500" />
                 <span>Assigned Project</span>
               </div>
-              <p className="text-lg font-black text-stone-900 dark:text-white leading-tight">
-                {profile.assigned_project || 'No project assigned yet'}
-              </p>
+              {profile.assigned_project ? (
+                profile.project_github_link ? (
+                  <a
+                    href={profile.project_github_link}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-lg font-black text-red-600 dark:text-red-400 hover:underline leading-tight"
+                  >
+                    <span>{profile.assigned_project}</span>
+                    <GithubIcon className="h-4 w-4 inline-block shrink-0" />
+                  </a>
+                ) : (
+                  <p className="text-lg font-black text-stone-900 dark:text-white leading-tight">
+                    {profile.assigned_project}
+                  </p>
+                )
+              ) : (
+                <p className="text-lg font-bold text-stone-400 dark:text-stone-500 italic">
+                  No project assigned yet
+                </p>
+              )}
               <p className="text-xs text-stone-550 dark:text-stone-400">
                 {profile.assigned_project ? 'Keep your project title updated.' : 'Request your project supervisor to assign one.'}
               </p>
             </div>
             <div className="shrink-0 rounded-xl bg-red-500/10 p-1 dark:bg-red-500/20 text-red-600 dark:text-red-400">
-              <EditProjectDialog initialValue={profile.assigned_project} />
+              <EditProjectDialog initialValue={profile.assigned_project} initialGithubLink={profile.project_github_link} />
             </div>
           </div>
         </div>

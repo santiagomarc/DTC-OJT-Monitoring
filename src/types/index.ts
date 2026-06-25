@@ -11,6 +11,7 @@ export interface Student {
   required_ojt_hours: number
   assigned_project: string | null
   github_link: string | null
+  project_github_link: string | null
   role: UserRole
   created_at: string
   updated_at: string
@@ -25,6 +26,7 @@ export interface AttendanceLog {
   total_hours: number | null  // generated column
   planned_task: string | null
   actual_accomplishment: string | null
+  photo_url: string | null
   created_at: string
   updated_at: string
 }
@@ -40,6 +42,7 @@ export interface StudentProgress {
   required_ojt_hours: number
   assigned_project: string | null
   github_link: string | null
+  project_github_link: string | null
   role: UserRole
   total_rendered_hours: number
   remaining_hours: number
@@ -65,6 +68,7 @@ export interface StudentProfileFormValues {
   required_ojt_hours: number
   assigned_project: string
   github_link: string
+  project_github_link: string
 }
 
 // Action response type

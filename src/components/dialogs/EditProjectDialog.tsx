@@ -7,9 +7,10 @@ import { updateStudentProfileAction } from '@/actions/students'
 
 interface Props {
   initialValue?: string | null
+  initialGithubLink?: string | null
 }
 
-export function EditProjectDialog({ initialValue }: Props) {
+export function EditProjectDialog({ initialValue, initialGithubLink }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
@@ -37,7 +38,7 @@ export function EditProjectDialog({ initialValue }: Props) {
 
       {isOpen && (
         <div className="absolute inset-0 z-50 flex flex-col justify-center bg-white p-6 backdrop-blur-xl dark:bg-stone-900/95 animate-in fade-in zoom-in-95 duration-200">
-          <div className="mb-4 flex items-center justify-between">
+          <div className="mb-2 flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wider text-stone-900 dark:text-white">
               Edit Assigned Project
             </h2>
@@ -49,22 +50,44 @@ export function EditProjectDialog({ initialValue }: Props) {
             </button>
           </div>
 
-          <form action={onSubmit} className="flex gap-3">
-            <input
-              type="text"
-              name="assigned_project"
-              defaultValue={initialValue || ''}
-              placeholder="e.g. Chatbot AI / Mobile App"
-              className="input flex-1 !h-10 !py-2"
-              required
-            />
-            <button
-              type="submit"
-              disabled={isPending}
-              className="shrink-0 rounded-xl bg-red-600 px-5 py-2 text-sm font-medium text-white transition hover:bg-red-500 disabled:opacity-50"
-            >
-              {isPending ? 'Saving...' : 'Save'}
-            </button>
+          <form action={onSubmit} className="space-y-3">
+            <div>
+              <label className="text-[9px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1 block">Project Title</label>
+              <input
+                type="text"
+                name="assigned_project"
+                defaultValue={initialValue || ''}
+                placeholder="e.g. Chatbot AI / Mobile App"
+                className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white"
+                required
+              />
+            </div>
+            <div>
+              <label className="text-[9px] font-bold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1 block">Project GitHub Repository</label>
+              <input
+                type="url"
+                name="project_github_link"
+                defaultValue={initialGithubLink || ''}
+                placeholder="https://github.com/org/repo"
+                className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="rounded-xl border border-stone-200 bg-white dark:border-white/10 dark:bg-stone-900 px-4 py-2 text-xs font-semibold text-stone-600 dark:text-stone-400 hover:text-stone-900 dark:hover:text-white transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isPending}
+                className="rounded-xl bg-red-600 px-5 py-2 text-xs font-medium text-white transition hover:bg-red-500 disabled:opacity-50"
+              >
+                {isPending ? 'Saving...' : 'Save'}
+              </button>
+            </div>
           </form>
         </div>
       )}

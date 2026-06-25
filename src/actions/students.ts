@@ -77,6 +77,7 @@ export async function getStudentProgressById(
 const updateProfileSchema = z.object({
   assigned_project: z.string().max(300).optional(),
   github_link: z.string().url('Enter a valid URL').optional().or(z.literal('')),
+  project_github_link: z.string().url('Enter a valid URL').optional().or(z.literal('')),
 })
 
 /**
@@ -97,6 +98,9 @@ export async function updateStudentProfileAction(
   if (formData.has('github_link')) {
     rawData.github_link = (formData.get('github_link') as string) || ''
   }
+  if (formData.has('project_github_link')) {
+    rawData.project_github_link = (formData.get('project_github_link') as string) || ''
+  }
 
   const result = updateProfileSchema.safeParse(rawData)
   if (!result.success) {
@@ -109,6 +113,9 @@ export async function updateStudentProfileAction(
   }
   if ('github_link' in result.data) {
     updatePayload.github_link = result.data.github_link || null
+  }
+  if ('project_github_link' in result.data) {
+    updatePayload.project_github_link = result.data.project_github_link || null
   }
 
   const supabase = await createClient()

@@ -53,6 +53,7 @@ export const studentProfileSchema = z.object({
   required_ojt_hours: z.number().min(1).max(2000),
   assigned_project: z.string().max(300).optional().or(z.literal('')),
   github_link: z.string().url('Enter a valid URL').optional().or(z.literal('')),
+  project_github_link: z.string().url('Enter a valid URL').optional().or(z.literal('')),
 })
 
 /**
