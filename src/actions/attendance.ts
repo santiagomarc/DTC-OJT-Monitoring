@@ -94,13 +94,16 @@ export async function createAttendanceLog(
       photo_url: photoUrl,
     })
     .select()
-    .single()
 
   if (error) {
     if (error.code === '23505') {
       return { success: false, error: 'You already have a log entry for this date.' }
     }
     return { success: false, error: error.message }
+  }
+
+  if (!data || data.length === 0) {
+    return { success: false, error: 'Failed to create attendance entry.' }
   }
 
   // Sync to Sheets
@@ -112,7 +115,7 @@ export async function createAttendanceLog(
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/logs')
-  return { success: true, data: data as AttendanceLog }
+  return { success: true, data: data[0] as AttendanceLog }
 }
 
 /**
@@ -193,9 +196,11 @@ export async function updateAttendanceLog(
     .eq('id', logId)
     .eq('student_id', studentId) // RLS double-check
     .select()
-    .single()
 
   if (error) return { success: false, error: error.message }
+  if (!data || data.length === 0) {
+    return { success: false, error: 'No attendance entry found to update.' }
+  }
 
   // Sync to Sheets
   try {
@@ -206,7 +211,7 @@ export async function updateAttendanceLog(
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/logs')
-  return { success: true, data: data as AttendanceLog }
+  return { success: true, data: data[0] as AttendanceLog }
 }
 
 /**

@@ -6,6 +6,7 @@ interface Props {
   readOnly?: boolean
 }
 
+
 function formatTime(timeStr: string | null): string {
   if (!timeStr) return '—'
   const [h, m] = timeStr.split(':')
