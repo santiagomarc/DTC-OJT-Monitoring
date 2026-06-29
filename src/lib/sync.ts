@@ -104,7 +104,7 @@ async function ensureSheetTab(
  */
 async function findMasterRow(
   sheets: ReturnType<typeof getSheetsClient>,
-  studentId: string,
+  internId: string,
   lastName: string,
   firstName: string
 ): Promise<number> {
@@ -116,8 +116,8 @@ async function findMasterRow(
   
   // 1. Search by Student ID (Column L is index 11)
   for (let i = 1; i < rows.length; i++) {
-    const rowStudentId = (rows[i][11] || '').trim()
-    if (rowStudentId === studentId) {
+    const rowInternId = (rows[i][11] || '').trim()
+    if (rowInternId === internId) {
       return i + 1
     }
   }
@@ -143,7 +143,7 @@ async function findMasterRow(
  *
  * This is intentionally idempotent — safe to call multiple times.
  */
-export async function syncStudentToSheets(studentId: string): Promise<void> {
+export async function syncInternToSheets(internId: string): Promise<void> {
   // ── 0. Environment Guard ──────────────────────────────────
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID?.trim()
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim()
@@ -162,7 +162,7 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
     const { data: progress, error: progressError } = await supabase
       .from('student_progress')
       .select('*')
-      .eq('id', studentId)
+      .eq('id', internId)
       .single<StudentProgress>()
 
     if (progressError || !progress) {
@@ -174,7 +174,7 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
     const { data: logs, error: logsError } = await supabase
       .from('attendance_logs')
       .select('*')
-      .eq('student_id', studentId)
+      .eq('student_id', internId)
       .order('date', { ascending: true })
 
     if (logsError) {
@@ -217,7 +217,7 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
       currentRows.push(['LAST NAME'])
     }
 
-    let rowIndex = await findMasterRow(sheets, studentId, progress.last_name, progress.first_name)
+    let rowIndex = await findMasterRow(sheets, internId, progress.last_name, progress.first_name)
     let targetRow = rowIndex
     let existingActualCompletion = ''
     const remainingHoursText = `${progress.remaining_hours} hours`
@@ -241,7 +241,7 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
             '',                                                             // col I: ACTUAL COMPLETION
             progress.assigned_project?.toUpperCase() ?? '',                 // col J: ASSIGNED PROJECT
             progress.github_link ?? '',                                     // col K: GITHUB LINK
-            studentId,                                                      // col L: STUDENT ID
+            internId,                                                      // col L: STUDENT ID
           ]]
         }
       })
@@ -278,7 +278,7 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
         existingActualCompletion,                                       // col I: ACTUAL COMPLETION
         progress.assigned_project?.toUpperCase() ?? '',                 // col J: ASSIGNED PROJECT
         progress.github_link ?? '',                                     // col K: GITHUB LINK
-        studentId,                                                      // col L: STUDENT ID
+        internId,                                                      // col L: STUDENT ID
       ]
 
       await sheets.spreadsheets.values.update({
@@ -365,7 +365,7 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
 
     console.log(`[sync] ✅ Synced ${progress.last_name}, ${progress.first_name} to Sheets`)
   } catch (error) {
-    console.error(`[sync] ❌ Error syncing student ${studentId} to sheets:`, error)
+    console.error(`[sync] ❌ Error syncing student ${internId} to sheets:`, error)
   }
 }
 
@@ -373,7 +373,7 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
  * Full reconciliation: syncs ALL students to Sheets.
  * Used by the cron job as a fallback.
  */
-export async function syncAllStudentsToSheets(): Promise<void> {
+export async function syncAllInternsToSheets(): Promise<void> {
   // ── Environment Guard ──────────────────────────────────
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID?.trim()
   const clientEmail = process.env.GOOGLE_SERVICE_ACCOUNT_EMAIL?.trim()
@@ -401,7 +401,7 @@ export async function syncAllStudentsToSheets(): Promise<void> {
     const chunkSize = 5
     for (let i = 0; i < students.length; i += chunkSize) {
       const chunk = students.slice(i, i + chunkSize)
-      await Promise.allSettled(chunk.map((student) => syncStudentToSheets(student.id)))
+      await Promise.allSettled(chunk.map((student) => syncInternToSheets(student.id)))
     }
 
     console.log(`[sync] ✅ Full reconciliation complete — synced ${students.length} students`)
@@ -414,8 +414,8 @@ export async function syncAllStudentsToSheets(): Promise<void> {
  * Deletes a student's individual tab and removes/consolidates their row on the Master tab.
  * Safely recalculates other students' formula offsets during consolidation.
  */
-export async function deleteStudentFromSheets(
-  studentId: string,
+export async function deleteInternFromSheets(
+  internId: string,
   lastName: string,
   firstName: string
 ): Promise<void> {
@@ -475,13 +475,13 @@ export async function deleteStudentFromSheets(
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i]
       if (row && row.some(cell => cell && String(cell).trim() !== '')) {
-        const rowStudentId = (row[11] || '').trim()
+        const rowInternId = (row[11] || '').trim()
         const rowLast = (row[0] || '').trim().toUpperCase()
         const rowFirst = (row[1] || '').trim().toUpperCase()
         
         // Skip the student row we are deleting
-        if (rowStudentId === studentId || (rowLast === targetLast && rowFirst === targetFirst)) {
-          console.log(`[sync] Removing row for studentId=${studentId} (${lastName}, ${firstName}) from Master sheet`)
+        if (rowInternId === internId || (rowLast === targetLast && rowFirst === targetFirst)) {
+          console.log(`[sync] Removing row for internId=${internId} (${lastName}, ${firstName}) from Master sheet`)
           continue
         }
         

@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { syncAllStudentsToSheets } from '@/lib/sync'
+import { syncAllInternsToSheets } from '@/lib/sync'
 
 // GET /api/cron
 // Full reconciliation — syncs all students to Google Sheets.
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   }
 
   try {
-    await syncAllStudentsToSheets()
+    await syncAllInternsToSheets()
     return NextResponse.json({ ok: true, message: 'Full sync complete' })
   } catch (err) {
     console.error('[cron] Sync error:', err)
