@@ -1,12 +1,28 @@
 import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
+import { headers } from 'next/headers'
 import type { Student } from '@/types'
 
 /**
  * Retrieve and cache the authenticated user.
- * This eliminates redundant calls to supabase.auth.getUser() across components in a single request.
+ * This checks forwarded headers first to avoid an external auth server roundtrip.
  */
 export const getCachedUser = cache(async () => {
+  try {
+    const headersList = await headers()
+    const userId = headersList.get('x-user-id')
+    const userEmail = headersList.get('x-user-email')
+
+    if (userId) {
+      return {
+        id: userId,
+        email: userEmail,
+      } as any
+    }
+  } catch (e) {
+    // headers() might throw in static rendering or pre-render contexts, safe to ignore and fall back
+  }
+
   const supabase = await createClient()
   const {
     data: { user },
