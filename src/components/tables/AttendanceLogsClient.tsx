@@ -5,9 +5,11 @@ import { toast } from 'sonner'
 import { Plus, Pencil, Trash2, X, Check, Clock, Calendar, BookOpen, ClipboardCheck, Eye } from 'lucide-react'
 import { createAttendanceLog, updateAttendanceLog, deleteAttendanceLog } from '@/actions/attendance'
 import type { AttendanceLog, ActionResult } from '@/types'
+import { createClient } from '@/lib/supabase/client'
 
 interface Props {
   initialLogs: AttendanceLog[]
+  internId: string
 }
 
 const emptyState: ActionResult = { success: false }
@@ -27,21 +29,22 @@ function formatDate(dateStr: string): string {
     day: 'numeric',
     year: 'numeric',
   })
-}
-
-/** Inline attendance log form (create or edit) */
+}/** Inline attendance log form (create or edit) */
 function AttendanceForm({
+  internId,
   logId,
   defaultValues,
   onCancel,
   onSuccess,
 }: {
+  internId: string
   logId?: string
   defaultValues?: Partial<AttendanceLog>
   onCancel: () => void
   onSuccess: (log: AttendanceLog) => void
 }) {
   const isEdit = !!logId
+  const [isUploading, setIsUploading] = useState(false)
 
   const boundAction = isEdit
     ? updateAttendanceLog.bind(null, logId!)
@@ -71,9 +74,78 @@ function AttendanceForm({
     }
   }, [state])
 
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setIsUploading(true)
+
+    const form = event.currentTarget
+    const formData = new FormData(form)
+    const photoFile = formData.get('photo') as File | null
+
+    try {
+      let photoUrl = defaultValues?.photo_url || null
+
+      if (photoFile && photoFile.size > 0) {
+        if (photoFile.size > 5 * 1024 * 1024) {
+          toast.error('Photo size cannot exceed 5MB.')
+          setIsUploading(false)
+          return
+        }
+        if (!photoFile.type.startsWith('image/')) {
+          toast.error('Only image files are allowed.')
+          setIsUploading(false)
+          return
+        }
+
+        const supabase = createClient()
+        const fileExt = photoFile.name.split('.').pop()
+        const fileName = `${internId}/${Date.now()}.${fileExt}`
+
+        const { error: uploadError } = await supabase.storage
+          .from('attendance_photos')
+          .upload(fileName, photoFile, {
+            contentType: photoFile.type,
+            upsert: true,
+          })
+
+        if (uploadError) {
+          toast.error(`Failed to upload photo: ${uploadError.message}`)
+          setIsUploading(false)
+          return
+        }
+
+        const { data: { publicUrl } } = supabase.storage
+          .from('attendance_photos')
+          .getPublicUrl(fileName)
+
+        photoUrl = publicUrl
+      }
+
+      // Prepare final FormData for Server Action without the heavy File object
+      const finalFormData = new FormData()
+      for (const [key, value] of formData.entries()) {
+        if (key !== 'photo') {
+          finalFormData.append(key, value)
+        }
+      }
+
+      if (photoUrl) {
+        finalFormData.append('photo_url', photoUrl)
+      }
+
+      (formAction as any)(finalFormData)
+    } catch (err: any) {
+      toast.error(err.message || 'An error occurred during submission.')
+    } finally {
+      setIsUploading(false)
+    }
+  }
+
+  const isSaving = isUploading || isPending
+
   return (
     <form
-      action={formAction}
+      onSubmit={handleSubmit}
       className="rounded-2xl border border-red-200/80 bg-red-50/40 p-6 dark:border-red-500/20 dark:bg-red-950/20 backdrop-blur-md shadow-sm space-y-4 transition-all duration-300"
     >
       <div className="flex items-center justify-between border-b border-red-100 dark:border-red-500/10 pb-3">
@@ -183,11 +255,11 @@ function AttendanceForm({
       <div className="flex gap-3 pt-2">
         <button
           type="submit"
-          disabled={isPending}
+          disabled={isSaving}
           className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 px-4 py-2 text-sm font-semibold text-white transition-all hover:scale-[1.01] active:scale-[0.99] disabled:opacity-60"
         >
           <Check className="h-4 w-4" />
-          {isPending ? 'Saving…' : 'Save Entry'}
+          {isSaving ? 'Saving…' : 'Save Entry'}
         </button>
         <button
           type="button"
@@ -202,7 +274,7 @@ function AttendanceForm({
   )
 }
 
-export function AttendanceLogsClient({ initialLogs }: Props) {
+export function AttendanceLogsClient({ initialLogs, internId }: Props) {
   const [logs, setLogs] = useState<AttendanceLog[]>(initialLogs)
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
@@ -259,6 +331,7 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
       {showForm && (
         <div className="animate-in fade-in slide-in-from-top-4 duration-300">
           <AttendanceForm
+            internId={internId}
             onCancel={() => setShowForm(false)}
             onSuccess={handleCreated}
           />
@@ -294,6 +367,7 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
                       <td colSpan={6} className="p-0">
                         <div className="py-2 animate-in fade-in duration-200">
                           <AttendanceForm
+                            internId={internId}
                             logId={log.id}
                             defaultValues={log}
                             onCancel={() => setEditId(null)}
@@ -388,6 +462,7 @@ export function AttendanceLogsClient({ initialLogs }: Props) {
               editId === log.id ? (
                 <div key={log.id} className="animate-in fade-in duration-200">
                   <AttendanceForm
+                    internId={internId}
                     logId={log.id}
                     defaultValues={log}
                     onCancel={() => setEditId(null)}

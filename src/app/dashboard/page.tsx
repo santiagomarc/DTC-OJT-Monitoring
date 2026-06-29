@@ -144,7 +144,7 @@ export default async function StudentDashboardPage() {
       )}
 
       {/* Attendance Logs Client Section */}
-      <AttendanceLogsClient initialLogs={logs} />
+      <AttendanceLogsClient initialLogs={logs} internId={profile.id} />
     </div>
   )
 }
