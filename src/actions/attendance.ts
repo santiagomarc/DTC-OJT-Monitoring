@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { attendanceLogSchema } from '@/lib/validations'
 import { syncInternToSheets } from '@/lib/sync'
+import { getCachedInternId } from '@/lib/cache'
 import type { ActionResult, AttendanceLog } from '@/types'
 
 /**
@@ -11,19 +12,7 @@ import type { ActionResult, AttendanceLog } from '@/types'
  * Returns null if unauthenticated.
  */
 async function getInternId(): Promise<string | null> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data } = await supabase
-    .from('students')
-    .select('id')
-    .eq('auth_user_id', user.id)
-    .single()
-
-  return data?.id ?? null
+  return getCachedInternId()
 }
 
 /**

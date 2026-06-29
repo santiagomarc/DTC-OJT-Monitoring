@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { Suspense } from 'react'
 import { getMyProfile, getMyProgress } from '@/actions/students'
 import { getMyAttendanceLogs } from '@/actions/attendance'
 import { ProgressCard } from '@/components/ui/ProgressCard'
@@ -25,13 +26,33 @@ function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
   )
 }
 
+function AttendanceLogsSkeleton() {
+  return (
+    <div className="space-y-4 animate-pulse">
+      <div className="space-y-2">
+        <div className="h-6 w-48 rounded bg-stone-200 dark:bg-stone-850" />
+        <div className="h-4 w-72 rounded bg-stone-200 dark:bg-stone-850" />
+      </div>
+      <div className="space-y-3 pt-4">
+        {[1, 2, 3].map((n) => (
+          <div key={n} className="h-20 rounded-2xl bg-stone-100 dark:bg-stone-900/60" />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+async function AttendanceLogsSection({ internId }: { internId: string }) {
+  const logs = await getMyAttendanceLogs()
+  return <AttendanceLogsClient initialLogs={logs} internId={internId} />
+}
+
 export const metadata = { title: 'Dashboard — BatSU OJT Monitor' }
 
 export default async function StudentDashboardPage() {
-  const [profile, progress, logs] = await Promise.all([
+  const [profile, progress] = await Promise.all([
     getMyProfile(),
     getMyProgress(),
-    getMyAttendanceLogs(),
   ])
 
   if (!profile) redirect('/login')
@@ -144,7 +165,9 @@ export default async function StudentDashboardPage() {
       )}
 
       {/* Attendance Logs Client Section */}
-      <AttendanceLogsClient initialLogs={logs} internId={profile.id} />
+      <Suspense fallback={<AttendanceLogsSkeleton />}>
+        <AttendanceLogsSection internId={profile.id} />
+      </Suspense>
     </div>
   )
 }

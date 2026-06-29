@@ -4,37 +4,24 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { syncInternToSheets } from '@/lib/sync'
 import { createClient } from '@/lib/supabase/server'
+import { getCachedProfile, getCachedUser } from '@/lib/cache'
 import type { Student, StudentProgress } from '@/types'
 
 /**
  * Get the current logged-in user's student profile.
  */
 export async function getMyProfile(): Promise<Student | null> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
-
-  const { data } = await supabase
-    .from('students')
-    .select('*')
-    .eq('auth_user_id', user.id)
-    .single()
-
-  return data as Student | null
+  return getCachedProfile()
 }
 
 /**
  * Get the current student's progress (rendered hours, remaining, etc.)
  */
 export async function getMyProgress(): Promise<StudentProgress | null> {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getCachedUser()
   if (!user) return null
 
+  const supabase = await createClient()
   const { data } = await supabase
     .from('student_progress')
     .select('*')

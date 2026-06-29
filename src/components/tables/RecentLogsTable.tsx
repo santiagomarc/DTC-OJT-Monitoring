@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { AttendanceLog } from '@/types'
 import { Calendar, Clock, Eye, X } from 'lucide-react'
+import Image from 'next/image'
 
 interface Props {
   logs: AttendanceLog[]
@@ -162,11 +163,13 @@ export function RecentLogsTable({ logs }: Props) {
               {selectedLog.photo_url && (
                 <div>
                   <h4 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-1.5">Documentation Photo</h4>
-                  <div className="relative overflow-hidden rounded-2xl border border-stone-200 dark:border-white/10 max-h-[300px] flex items-center justify-center bg-stone-50 dark:bg-stone-950/20">
-                    <img
+                  <div className="relative overflow-hidden rounded-2xl border border-stone-200 dark:border-white/10 h-[280px] w-full bg-stone-50 dark:bg-stone-950/20">
+                    <Image
                       src={selectedLog.photo_url}
                       alt="Documentation"
-                      className="max-h-[280px] w-auto object-contain py-2"
+                      fill
+                      sizes="(max-width: 768px) 100vw, 500px"
+                      className="object-contain py-2"
                     />
                   </div>
                 </div>
