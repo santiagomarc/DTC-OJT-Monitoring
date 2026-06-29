@@ -72,12 +72,10 @@ export async function createAttendanceLog(
     return { success: false, error: 'Failed to create attendance entry.' }
   }
 
-  // Sync to Sheets
-  try {
-    await syncInternToSheets(internId)
-  } catch (e) {
-    console.error('[sync] Sync failed:', e)
-  }
+  // Sync to Sheets (non-blocking)
+  syncInternToSheets(internId).catch((e) => {
+    console.error('[sync] Sync failed for intern:', internId, e)
+  })
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/logs')
@@ -145,12 +143,10 @@ export async function updateAttendanceLog(
     return { success: false, error: 'No attendance entry found to update.' }
   }
 
-  // Sync to Sheets
-  try {
-    await syncInternToSheets(internId)
-  } catch (e) {
-    console.error('[sync] Sync failed:', e)
-  }
+  // Sync to Sheets (non-blocking)
+  syncInternToSheets(internId).catch((e) => {
+    console.error('[sync] Sync failed for intern:', internId, e)
+  })
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/logs')
@@ -175,12 +171,10 @@ export async function deleteAttendanceLog(
 
   if (error) return { success: false, error: error.message }
 
-  // Sync to Sheets
-  try {
-    await syncInternToSheets(internId)
-  } catch (e) {
-    console.error('[sync] Sync failed:', e)
-  }
+  // Sync to Sheets (non-blocking)
+  syncInternToSheets(internId).catch((e) => {
+    console.error('[sync] Sync failed for intern:', internId, e)
+  })
 
   revalidatePath('/dashboard')
   revalidatePath('/dashboard/logs')
@@ -202,4 +196,87 @@ export async function getMyAttendanceLogs(): Promise<AttendanceLog[]> {
     .order('date', { ascending: false })
 
   return (data as AttendanceLog[]) ?? []
+}
+
+/**
+ * QUICK ACTION — Clock in for today.
+ */
+export async function clockInAction(): Promise<ActionResult<AttendanceLog>> {
+  const internId = await getInternId()
+  if (!internId) return { success: false, error: 'Not authenticated' }
+
+  const supabase = await createClient()
+
+  const now = new Date()
+  const phDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(now) // YYYY-MM-DD
+  const phTime = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', hour12: false, hour: '2-digit', minute: '2-digit' }).format(now) // HH:MM
+
+  const { data, error } = await supabase
+    .from('attendance_logs')
+    .insert({
+      student_id: internId,
+      date: phDate,
+      time_in: phTime + ':00',
+      time_out: null,
+      planned_task: 'OJT Session started via Quick Clock-In',
+      actual_accomplishment: null,
+    })
+    .select()
+
+  if (error) {
+    if (error.code === '23505') {
+      return { success: false, error: 'You already have an attendance log for today.' }
+    }
+    return { success: false, error: error.message }
+  }
+
+  if (!data || data.length === 0) {
+    return { success: false, error: 'Failed to clock in.' }
+  }
+
+  // Sync to Sheets (non-blocking)
+  syncInternToSheets(internId).catch((e) => {
+    console.error('[sync] Clock-in sync failed:', e)
+  })
+
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/logs')
+  return { success: true, data: data[0] as AttendanceLog }
+}
+
+/**
+ * QUICK ACTION — Clock out of active session.
+ */
+export async function clockOutAction(logId: string): Promise<ActionResult<AttendanceLog>> {
+  const internId = await getInternId()
+  if (!internId) return { success: false, error: 'Not authenticated' }
+
+  const supabase = await createClient()
+
+  const now = new Date()
+  const phTime = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', hour12: false, hour: '2-digit', minute: '2-digit' }).format(now) // HH:MM
+
+  const { data, error } = await supabase
+    .from('attendance_logs')
+    .update({
+      time_out: phTime + ':00',
+      actual_accomplishment: 'Completed today\'s session.',
+    })
+    .eq('id', logId)
+    .eq('student_id', internId)
+    .select()
+
+  if (error) return { success: false, error: error.message }
+  if (!data || data.length === 0) {
+    return { success: false, error: 'No active session found.' }
+  }
+
+  // Sync to Sheets (non-blocking)
+  syncInternToSheets(internId).catch((e) => {
+    console.error('[sync] Clock-out sync failed:', e)
+  })
+
+  revalidatePath('/dashboard')
+  revalidatePath('/dashboard/logs')
+  return { success: true, data: data[0] as AttendanceLog }
 }

@@ -36,8 +36,9 @@ var WEBHOOK_URL = 'https://dtc-ojt-monitoring.vercel.app/api/webhooks/sheets'
 //                 ↑ Replace with your actual deployed URL before installing the trigger.
 //                   For local dev with ngrok: 'https://xxxx.ngrok-free.app/api/webhooks/sheets'
 
-var SECRET = 'bat-su-ojt-secret-key-2026'
-//            ↑ Must match SHEETS_WEBHOOK_SECRET in your .env.local / Vercel env vars.
+var SECRET = PropertiesService.getScriptProperties().getProperty('SHEETS_WEBHOOK_SECRET') || 'bat-su-ojt-secret-key-2026'
+//            ↑ Securely set SHEETS_WEBHOOK_SECRET under Project Settings -> Script Properties in Apps Script.
+//              Must match SHEETS_WEBHOOK_SECRET in your .env.local / Vercel env vars.
 // ── END CONFIGURATION ──────────────────────────────────────────────────────
 
 /**

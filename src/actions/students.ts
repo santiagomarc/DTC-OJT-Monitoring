@@ -113,12 +113,10 @@ export async function updateStudentProfileAction(
 
   if (error) return { error: error.message }
 
-  // Sync back to Google Sheets
-  try {
-    await syncInternToSheets(profile.id)
-  } catch (e) {
+  // Sync back to Google Sheets (non-blocking)
+  syncInternToSheets(profile.id).catch((e) => {
     console.error('[students] Sync after updateStudentProfileAction failed:', e)
-  }
+  })
 
   revalidatePath('/dashboard')
   return { success: true }

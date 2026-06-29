@@ -384,6 +384,16 @@ export async function syncAllInternsToSheets(): Promise<void> {
     return
   }
 
+  const delayHelper = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
+  const withTimeout = (promise: Promise<void>, ms: number, label: string) => {
+    return Promise.race([
+      promise,
+      new Promise<void>((_, reject) =>
+        setTimeout(() => reject(new Error(`Timeout of ${ms}ms exceeded for ${label}`)), ms)
+      ),
+    ])
+  }
+
   try {
     const supabase = await createServiceClient()
 
@@ -397,11 +407,23 @@ export async function syncAllInternsToSheets(): Promise<void> {
       return
     }
 
-    // Process in chunks of 5 parallel requests to prevent API rate limit and timeout issues
-    const chunkSize = 5
+    // Process in chunks of 2 parallel requests to prevent API rate limit and timeout issues.
+    // Adds a 1-second delay between chunks and a 15-second timeout per student sync.
+    const chunkSize = 2
     for (let i = 0; i < students.length; i += chunkSize) {
+      if (i > 0) {
+        await delayHelper(1000)
+      }
       const chunk = students.slice(i, i + chunkSize)
-      await Promise.allSettled(chunk.map((student) => syncInternToSheets(student.id)))
+      await Promise.allSettled(
+        chunk.map((student) =>
+          withTimeout(
+            syncInternToSheets(student.id),
+            15000,
+            `student ${student.id}`
+          )
+        )
+      )
     }
 
     console.log(`[sync] ✅ Full reconciliation complete — synced ${students.length} students`)

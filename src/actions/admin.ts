@@ -50,12 +50,10 @@ export async function editInternAction(formData: FormData): Promise<{ success?: 
 
   if (error) return { error: error.message }
 
-  // Sync the updated profile back to Google Sheets
-  try {
-    await syncInternToSheets(result.data.internId)
-  } catch (e) {
+  // Sync the updated profile back to Google Sheets (non-blocking)
+  syncInternToSheets(result.data.internId).catch((e) => {
     console.error('[admin] Sync after editIntern failed:', e)
-  }
+  })
 
   revalidatePath('/dashboard/admin')
   revalidatePath(`/dashboard/admin/${result.data.internId}`)
@@ -116,12 +114,10 @@ export async function addManualLogAction(formData: FormData): Promise<{ success?
     return { error: error.message }
   }
 
-  // Sync the updated logs to Google Sheets
-  try {
-    await syncInternToSheets(result.data.internId)
-  } catch (e) {
+  // Sync the updated logs to Google Sheets (non-blocking)
+  syncInternToSheets(result.data.internId).catch((e) => {
     console.error('[admin] Sync after addManualLog failed:', e)
-  }
+  })
 
   revalidatePath('/dashboard/admin')
   revalidatePath(`/dashboard/admin/${result.data.internId}`)
@@ -170,12 +166,10 @@ export async function deleteInternAction(internId: string): Promise<{ success?: 
     }
   }
 
-  // 4. Sync deletion to Google Sheets
-  try {
-    await deleteInternFromSheets(internId, lastName, firstName)
-  } catch (e) {
+  // Sync deletion to Google Sheets (non-blocking)
+  deleteInternFromSheets(internId, lastName, firstName).catch((e) => {
     console.error('[admin] Sheets deletion failed:', e)
-  }
+  })
 
   revalidatePath('/dashboard/admin')
   revalidatePath(`/dashboard/admin/${internId}`)

@@ -159,17 +159,17 @@ export async function POST(request: Request) {
           // Generate a secure, high-entropy random password
           const defaultPassword = randomUUID()
 
-          // Check if an auth user with this email already exists
-          const { data: listData } = await supabase.auth.admin.listUsers()
-          const existingAuth = listData?.users?.find(
-            (u) => u.email?.toLowerCase() === derivedEmail.toLowerCase()
-          )
+          // Check if an auth user with this email already exists in students table first
+          const { data: existingStudent } = await supabase
+            .from('students')
+            .select('auth_user_id')
+            .eq('email', derivedEmail)
+            .maybeSingle()
 
-          let authUserId: string
+          let authUserId: string | undefined = existingStudent?.auth_user_id
 
-          if (existingAuth) {
-            authUserId = existingAuth.id
-            results.push(`Row ${row}: Found existing auth user for ${derivedEmail}`)
+          if (authUserId) {
+            results.push(`Row ${row}: Found existing auth user via profile for ${derivedEmail}`)
           } else {
             const { data: authData, error: authError } = await supabase.auth.admin.createUser({
               email: derivedEmail,
@@ -177,20 +177,33 @@ export async function POST(request: Request) {
               email_confirm: true,
             })
 
-            if (authError || !authData?.user) {
-              results.push(`Row ${row}: ❌ Failed to create auth account for ${derivedEmail}: ${authError?.message}`)
-              continue
+            if (authError) {
+              // If user already exists in auth but not in profile table, list users to locate their ID
+              if (authError.message.includes('already') || authError.status === 422) {
+                const { data: listData } = await supabase.auth.admin.listUsers()
+                const existingAuth = listData?.users?.find(
+                  (u) => u.email?.toLowerCase() === derivedEmail.toLowerCase()
+                )
+                if (existingAuth) {
+                  authUserId = existingAuth.id
+                  results.push(`Row ${row}: Found existing auth user for ${derivedEmail}`)
+                }
+              }
+              
+              if (!authUserId) {
+                results.push(`Row ${row}: ❌ Failed to create auth account for ${derivedEmail}: ${authError?.message}`)
+                continue
+              }
+            } else if (authData?.user) {
+              authUserId = authData.user.id
+              results.push(`Row ${row}: ✅ Created account for ${derivedEmail}`)
             }
-            authUserId = authData.user.id
-            // Log the generated credentials so the admin can share them
-            console.log(`[webhook] 🔑 Auto-provisioned: ${derivedEmail} / ${defaultPassword}`)
-            results.push(`Row ${row}: ✅ Created account: ${derivedEmail} (password: ${defaultPassword})`)
           }
 
           const { data: newStudent, error: profileError } = await supabase
             .from('students')
             .insert({
-              auth_user_id: authUserId,
+              auth_user_id: authUserId!,
               first_name: firstName,
               last_name: lastName,
               sr_code: srCode,

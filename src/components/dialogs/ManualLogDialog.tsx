@@ -85,13 +85,23 @@ export function ManualLogDialog({ internId }: Props) {
               </div>
 
               <div>
-                <label className="label">Task Description</label>
+                <label className="label">Planned Task / Activities</label>
                 <textarea
-                  name="task_description"
+                  name="planned_task"
                   required
-                  rows={3}
-                  placeholder="Describe tasks completed..."
-                  className="input resize-none"
+                  rows={2}
+                  placeholder="Describe planned tasks..."
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-500 outline-none transition-all duration-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 hover:border-stone-300 dark:hover:border-white/20 dark:border-white/10 dark:bg-stone-950/40 dark:text-white resize-none"
+                />
+              </div>
+
+              <div>
+                <label className="label">Actual Accomplishment</label>
+                <textarea
+                  name="actual_accomplishment"
+                  rows={2}
+                  placeholder="Describe actual accomplishments..."
+                  className="w-full rounded-xl border border-stone-200 bg-stone-50/80 px-4 py-2.5 text-sm text-stone-900 placeholder-stone-500 outline-none transition-all duration-200 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 hover:border-stone-300 dark:hover:border-white/20 dark:border-white/10 dark:bg-stone-950/40 dark:text-white resize-none"
                 />
               </div>
 

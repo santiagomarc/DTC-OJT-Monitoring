@@ -2,11 +2,12 @@
 
 import { useState, useActionState, useTransition, useEffect, useRef } from 'react'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, X, Check, Clock, Calendar, BookOpen, ClipboardCheck, Eye } from 'lucide-react'
-import { createAttendanceLog, updateAttendanceLog, deleteAttendanceLog } from '@/actions/attendance'
+import { Plus, Pencil, Trash2, X, Check, Clock, Calendar, BookOpen, ClipboardCheck, Eye, Printer } from 'lucide-react'
+import { createAttendanceLog, updateAttendanceLog, deleteAttendanceLog, clockInAction, clockOutAction } from '@/actions/attendance'
 import type { AttendanceLog, ActionResult } from '@/types'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
+import Link from 'next/link'
 
 interface Props {
   initialLogs: AttendanceLog[]
@@ -284,6 +285,31 @@ export function AttendanceLogsClient({ initialLogs, internId }: Props) {
   const [selectedLog, setSelectedLog] = useState<AttendanceLog | null>(null)
   const [isPending, startTransition] = useTransition()
 
+  const [isSyncing, startSyncTransition] = useTransition()
+  const activeLog = logs.find((l) => l.time_out === null)
+
+  function handleClockAction() {
+    startSyncTransition(async () => {
+      if (activeLog) {
+        const res = await clockOutAction(activeLog.id)
+        if (res.success && res.data) {
+          setLogs((prev) => prev.map((l) => (l.id === res.data!.id ? res.data! : l)))
+          toast.success('Successfully clocked out!')
+        } else {
+          toast.error(res.error || 'Failed to clock out.')
+        }
+      } else {
+        const res = await clockInAction()
+        if (res.success && res.data) {
+          setLogs((prev) => [res.data!, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
+          toast.success('Successfully clocked in!')
+        } else {
+          toast.error(res.error || 'Failed to clock in.')
+        }
+      }
+    })
+  }
+
   function handleCreated(log: AttendanceLog) {
     setLogs((prev) => [log, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
     setShowForm(false)
@@ -319,15 +345,38 @@ export function AttendanceLogsClient({ initialLogs, internId }: Props) {
           <h2 className="text-lg font-black text-stone-900 dark:text-white uppercase tracking-wider">Attendance Logs</h2>
           <p className="text-xs text-stone-500 dark:text-stone-400">Log and manage your daily hours and activity outputs</p>
         </div>
-        {!showForm && (
-          <button
-            onClick={() => setShowForm(true)}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-red-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+        <div className="flex flex-wrap items-center gap-3">
+          <Link
+            href="/dashboard/dtr"
+            className="inline-flex items-center gap-1.5 rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-xs font-bold text-stone-600 dark:border-white/10 dark:bg-stone-900/40 dark:text-stone-300 hover:bg-stone-100 hover:text-stone-900 dark:hover:bg-white/5 dark:hover:text-white transition cursor-pointer"
           >
-            <Plus className="h-4 w-4" />
-            Log Attendance
+            <Printer className="h-3.5 w-3.5" />
+            Print DTR Form
+          </Link>
+
+          <button
+            disabled={isSyncing}
+            onClick={handleClockAction}
+            className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
+              activeLog
+                ? 'bg-gradient-to-r from-amber-500 to-orange-600 shadow-orange-500/25'
+                : 'bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/25'
+            }`}
+          >
+            <Clock className="h-3.5 w-3.5" />
+            {isSyncing ? 'Processing…' : activeLog ? 'Clock Out' : 'Clock In'}
           </button>
-        )}
+
+          {!showForm && (
+            <button
+              onClick={() => setShowForm(true)}
+              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-red-600 to-orange-600 px-4 py-2.5 text-xs font-bold text-white shadow-lg shadow-red-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+            >
+              <Plus className="h-3.5 w-3.5" />
+              Log Attendance
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Create form */}

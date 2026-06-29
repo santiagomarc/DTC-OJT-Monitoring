@@ -4,9 +4,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
 
-  // Public routes & API routes — resolve instantly with 0ms overhead
+  // Public routes & explicit public API routes — resolve instantly with 0ms overhead
   const publicPaths = ['/login', '/signup', '/']
-  if (publicPaths.includes(pathname) || pathname.startsWith('/api/')) {
+  const publicApiPaths = ['/api/cron', '/api/webhooks/sheets']
+  if (publicPaths.includes(pathname) || publicApiPaths.includes(pathname)) {
     return NextResponse.next({ request })
   }
 
@@ -48,11 +49,15 @@ export async function updateSession(request: NextRequest) {
   // Refresh session — do not add code between createServerClient and auth.getUser()
   const { data: { user } } = await supabase.auth.getUser()
 
-  // If no session, redirect to login
+  // If no session, redirect to login with refreshed session cleanup/cookies
   if (!user) {
     const url = request.nextUrl.clone()
     url.pathname = '/login'
-    return NextResponse.redirect(url)
+    const redirectResponse = NextResponse.redirect(url)
+    supabaseResponse.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie.name, cookie.value, cookie)
+    })
+    return redirectResponse
   }
 
   requestHeaders.set('x-user-id', user.id)
@@ -69,7 +74,11 @@ export async function updateSession(request: NextRequest) {
     if (!profile || profile.role !== 'admin') {
       const url = request.nextUrl.clone()
       url.pathname = '/dashboard'
-      return NextResponse.redirect(url)
+      const redirectResponse = NextResponse.redirect(url)
+      supabaseResponse.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie.name, cookie.value, cookie)
+      })
+      return redirectResponse
     }
   }
 
@@ -78,8 +87,11 @@ export async function updateSession(request: NextRequest) {
       headers: requestHeaders,
     },
   })
-  supabaseResponse.headers.forEach((value, key) => {
-    finalResponse.headers.set(key, value)
+
+  // Copy all cookies from supabaseResponse to finalResponse to preserve all Set-Cookie headers
+  supabaseResponse.cookies.getAll().forEach((cookie) => {
+    finalResponse.cookies.set(cookie.name, cookie.value, cookie)
   })
+
   return finalResponse
 }

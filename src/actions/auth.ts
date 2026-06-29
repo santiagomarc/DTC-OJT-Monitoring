@@ -70,6 +70,12 @@ export async function signupAction(
     return { success: false, error: parsed.error.issues[0].message }
   }
 
+  const ALLOWED_EMAIL_DOMAINS = ['g.batstate-u.edu.ph', 'batstate-u.edu.ph']
+  const emailDomain = parsed.data.email.split('@')[1]?.toLowerCase()
+  if (!emailDomain || !ALLOWED_EMAIL_DOMAINS.includes(emailDomain)) {
+    return { success: false, error: 'Only BatSU school email addresses (g.batstate-u.edu.ph or batstate-u.edu.ph) are allowed.' }
+  }
+
   const supabase = await createClient()
 
   // Create the auth user
@@ -93,6 +99,8 @@ export async function signupAction(
     .maybeSingle()
 
   if (existingSr) {
+    // Rollback: delete the created auth user
+    await serviceClient.auth.admin.deleteUser(authData.user.id)
     return { success: false, error: 'This SR-Code is already registered.' }
   }
 
@@ -108,6 +116,8 @@ export async function signupAction(
   }).select('id').single()
 
   if (profileError || !studentData) {
+    // Rollback: delete the created auth user
+    await serviceClient.auth.admin.deleteUser(authData.user.id)
     return { success: false, error: profileError?.message ?? 'Failed to create profile' }
   }
 
