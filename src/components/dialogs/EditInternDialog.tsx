@@ -6,7 +6,7 @@ import { X, Edit2 } from 'lucide-react'
 import { editInternAction } from '@/actions/admin'
 
 interface Props {
-  studentId: string
+  internId: string
   initialData: {
     required_ojt_hours: number
     assigned_project?: string | null
@@ -14,12 +14,12 @@ interface Props {
   }
 }
 
-export function EditInternDialog({ studentId, initialData }: Props) {
+export function EditInternDialog({ internId, initialData }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   async function onSubmit(formData: FormData) {
-    formData.append('studentId', studentId)
+    formData.append('internId', internId)
     startTransition(async () => {
       const res = await editInternAction(formData)
       if (res?.error) {

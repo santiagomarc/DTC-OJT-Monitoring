@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
-import { syncStudentToSheets } from '@/lib/sync'
+import { syncInternToSheets } from '@/lib/sync'
 import { createClient } from '@/lib/supabase/server'
 import type { Student, StudentProgress } from '@/types'
 
@@ -62,13 +62,13 @@ export async function getAllStudentProgress(): Promise<StudentProgress[]> {
  * Admin only: get one student's progress by their student ID.
  */
 export async function getStudentProgressById(
-  studentId: string
+  internId: string
 ): Promise<StudentProgress | null> {
   const supabase = await createClient()
   const { data } = await supabase
     .from('student_progress')
     .select('*')
-    .eq('id', studentId)
+    .eq('id', internId)
     .single()
 
   return data as StudentProgress | null
@@ -128,7 +128,7 @@ export async function updateStudentProfileAction(
 
   // Sync back to Google Sheets
   try {
-    await syncStudentToSheets(profile.id)
+    await syncInternToSheets(profile.id)
   } catch (e) {
     console.error('[students] Sync after updateStudentProfileAction failed:', e)
   }

@@ -11,12 +11,12 @@ import { ManualLogDialog } from '@/components/dialogs/ManualLogDialog'
 import { DeleteInternDialog } from '@/components/dialogs/DeleteInternDialog'
 
 interface Props {
-  params: Promise<{ studentId: string }>
+  params: Promise<{ internId: string }>
 }
 
 export async function generateMetadata({ params }: Props) {
-  const { studentId } = await params
-  const progress = await getStudentProgressById(studentId)
+  const { internId } = await params
+  const progress = await getStudentProgressById(internId)
   return {
     title: progress
       ? `${progress.last_name}, ${progress.first_name} — BatSU OJT Monitor`
@@ -25,19 +25,19 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function AdminStudentDetailPage({ params }: Props) {
-  const { studentId } = await params
+  const { internId } = await params
 
   const profile = await getMyProfile()
   if (!profile || profile.role !== 'admin') redirect('/dashboard')
 
-  const progress = await getStudentProgressById(studentId)
+  const progress = await getStudentProgressById(internId)
   if (!progress) redirect('/dashboard/admin')
 
   const supabase = await createClient()
   const { data: logs } = await supabase
     .from('attendance_logs')
     .select('*')
-    .eq('student_id', studentId)
+    .eq('student_id', internId)
     .order('date', { ascending: false })
 
   return (
@@ -60,7 +60,7 @@ export default async function AdminStudentDetailPage({ params }: Props) {
           </div>
           <div className="flex flex-wrap gap-2">
             <EditInternDialog
-              studentId={studentId}
+              internId={internId}
               initialData={{
                 required_ojt_hours: progress.required_ojt_hours,
                 assigned_project: progress.assigned_project,
@@ -68,7 +68,7 @@ export default async function AdminStudentDetailPage({ params }: Props) {
               }}
             />
             <DeleteInternDialog
-              studentId={studentId}
+              internId={internId}
               lastName={progress.last_name}
             />
           </div>
@@ -101,7 +101,7 @@ export default async function AdminStudentDetailPage({ params }: Props) {
           <h2 className="text-lg font-semibold text-stone-900 dark:text-white">
             Attendance Log ({(logs ?? []).length} entries)
           </h2>
-          <ManualLogDialog studentId={studentId} />
+          <ManualLogDialog internId={internId} />
         </div>
         <RecentLogsTable logs={(logs as AttendanceLog[]) ?? []} readOnly />
       </div>

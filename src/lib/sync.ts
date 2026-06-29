@@ -98,30 +98,41 @@ async function ensureSheetTab(
 }
 
 /**
- * Finds the row index (1-based) of a student in the Master sheet by matching Last Name and First Name (both case-insensitive/uppercase).
+ * Finds the row index (1-based) of a student in the Master sheet.
+ * Searches by Student ID (Column L) first, and falls back to Name matching.
  * Returns -1 if not found.
  */
 async function findMasterRow(
   sheets: ReturnType<typeof getSheetsClient>,
+  studentId: string,
   lastName: string,
   firstName: string
 ): Promise<number> {
   const res = await sheets.spreadsheets.values.get({
     spreadsheetId: SPREADSHEET_ID,
-    range: `${MASTER_SHEET_NAME}!A:B`,
+    range: `${MASTER_SHEET_NAME}!A:L`,
   })
   const rows = res.data.values ?? []
+  
+  // 1. Search by Student ID (Column L is index 11)
+  for (let i = 1; i < rows.length; i++) {
+    const rowStudentId = (rows[i][11] || '').trim()
+    if (rowStudentId === studentId) {
+      return i + 1
+    }
+  }
+
+  // 2. Fallback to Name matching for manually added rows
   const targetLast = lastName.trim().toUpperCase()
   const targetFirst = firstName.trim().toUpperCase()
-
-  // Skip row 1 (assumed header row)
   for (let i = 1; i < rows.length; i++) {
     const rowLast = (rows[i][0] || '').trim().toUpperCase()
     const rowFirst = (rows[i][1] || '').trim().toUpperCase()
     if (rowLast === targetLast && rowFirst === targetFirst) {
-      return i + 1 // 1-based
+      return i + 1
     }
   }
+
   return -1
 }
 
@@ -195,25 +206,27 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
         'ACTUAL COMPLETION',
         'ASSIGNED PROJECT',
         'GITHUB LINK',
+        'STUDENT ID',
       ]
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${MASTER_SHEET_NAME}!A1:K1`,
+        range: `${MASTER_SHEET_NAME}!A1:L1`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [headers] },
       })
       currentRows.push(['LAST NAME'])
     }
 
-    let rowIndex = await findMasterRow(sheets, progress.last_name, progress.first_name)
+    let rowIndex = await findMasterRow(sheets, studentId, progress.last_name, progress.first_name)
     let targetRow = rowIndex
     let existingActualCompletion = ''
+    const remainingHoursText = `${progress.remaining_hours} hours`
 
     if (rowIndex === -1) {
       // Append a placeholder row first to let Google Sheets find the correct empty row
       const appendRes = await sheets.spreadsheets.values.append({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${MASTER_SHEET_NAME}!A:K`,
+        range: `${MASTER_SHEET_NAME}!A:L`,
         valueInputOption: 'USER_ENTERED',
         requestBody: {
           values: [[
@@ -223,11 +236,12 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
             progress.email ?? '',                                           // col D: EMAIL
             progress.program.toUpperCase(),                                 // col E: PROGRAM
             progress.required_ojt_hours,                                    // col F: REQUIRED OJT HOURS
-            '',                                                             // col G: REMAINING HOURS (formula placeholder)
+            remainingHoursText,                                             // col G: REMAINING HOURS (statically computed)
             formatDate(progress.estimated_completion_date),                 // col H: ESTIMATED COMPLETION
             '',                                                             // col I: ACTUAL COMPLETION
             progress.assigned_project?.toUpperCase() ?? '',                 // col J: ASSIGNED PROJECT
             progress.github_link ?? '',                                     // col K: GITHUB LINK
+            studentId,                                                      // col L: STUDENT ID
           ]]
         }
       })
@@ -244,20 +258,11 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
           targetRow = currentRows.length + 1
         }
       }
-
-      // Now insert the correct formula matching the newly generated row number
-      const formula = `=F${targetRow}-SUM('${tabName}'!E2:E1000) & " hours"`
-      await sheets.spreadsheets.values.update({
-        spreadsheetId: SPREADSHEET_ID,
-        range: `${MASTER_SHEET_NAME}!G${targetRow}`,
-        valueInputOption: 'USER_ENTERED',
-        requestBody: { values: [[formula]] }
-      })
     } else {
       // Fetch existing actual completion (column I is index 8)
       const getRes = await sheets.spreadsheets.values.get({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${MASTER_SHEET_NAME}!A${rowIndex}:K${rowIndex}`,
+        range: `${MASTER_SHEET_NAME}!A${rowIndex}:L${rowIndex}`,
       })
       existingActualCompletion = getRes.data.values?.[0]?.[8] || ''
 
@@ -268,16 +273,17 @@ export async function syncStudentToSheets(studentId: string): Promise<void> {
         progress.email ?? '',                                           // col D: EMAIL
         progress.program.toUpperCase(),                                 // col E: PROGRAM
         progress.required_ojt_hours,                                    // col F: REQUIRED OJT HOURS
-        `=F${targetRow}-SUM('${tabName}'!E2:E1000) & " hours"`,          // col G: REMAINING HOURS (formula)
+        remainingHoursText,                                             // col G: REMAINING HOURS (statically computed)
         formatDate(progress.estimated_completion_date),                 // col H: ESTIMATED COMPLETION
         existingActualCompletion,                                       // col I: ACTUAL COMPLETION
         progress.assigned_project?.toUpperCase() ?? '',                 // col J: ASSIGNED PROJECT
         progress.github_link ?? '',                                     // col K: GITHUB LINK
+        studentId,                                                      // col L: STUDENT ID
       ]
 
       await sheets.spreadsheets.values.update({
         spreadsheetId: SPREADSHEET_ID,
-        range: `${MASTER_SHEET_NAME}!A${targetRow}:K${targetRow}`,
+        range: `${MASTER_SHEET_NAME}!A${targetRow}:L${targetRow}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: [masterRow] },
       })
@@ -391,8 +397,11 @@ export async function syncAllStudentsToSheets(): Promise<void> {
       return
     }
 
-    for (const student of students) {
-      await syncStudentToSheets(student.id)
+    // Process in chunks of 5 parallel requests to prevent API rate limit and timeout issues
+    const chunkSize = 5
+    for (let i = 0; i < students.length; i += chunkSize) {
+      const chunk = students.slice(i, i + chunkSize)
+      await Promise.allSettled(chunk.map((student) => syncStudentToSheets(student.id)))
     }
 
     console.log(`[sync] ✅ Full reconciliation complete — synced ${students.length} students`)
@@ -405,7 +414,11 @@ export async function syncAllStudentsToSheets(): Promise<void> {
  * Deletes a student's individual tab and removes/consolidates their row on the Master tab.
  * Safely recalculates other students' formula offsets during consolidation.
  */
-export async function deleteStudentFromSheets(lastName: string, firstName: string): Promise<void> {
+export async function deleteStudentFromSheets(
+  studentId: string,
+  lastName: string,
+  firstName: string
+): Promise<void> {
   const spreadsheetId = SPREADSHEET_ID
   const sheets = getSheetsClient()
 
@@ -450,7 +463,7 @@ export async function deleteStudentFromSheets(lastName: string, firstName: strin
     // ── 2. Consolidate Master Sheet rows ──────────────────────
     const masterRes = await sheets.spreadsheets.values.get({
       spreadsheetId,
-      range: `${MASTER_SHEET_NAME}!A1:K1000`,
+      range: `${MASTER_SHEET_NAME}!A1:L1000`,
     })
     const rows = masterRes.data.values || []
     
@@ -462,12 +475,13 @@ export async function deleteStudentFromSheets(lastName: string, firstName: strin
     for (let i = 1; i < rows.length; i++) {
       const row = rows[i]
       if (row && row.some(cell => cell && String(cell).trim() !== '')) {
+        const rowStudentId = (row[11] || '').trim()
         const rowLast = (row[0] || '').trim().toUpperCase()
         const rowFirst = (row[1] || '').trim().toUpperCase()
         
         // Skip the student row we are deleting
-        if (rowLast === targetLast && rowFirst === targetFirst) {
-          console.log(`[sync] Removing row for ${lastName}, ${firstName} from Master sheet`)
+        if (rowStudentId === studentId || (rowLast === targetLast && rowFirst === targetFirst)) {
+          console.log(`[sync] Removing row for studentId=${studentId} (${lastName}, ${firstName}) from Master sheet`)
           continue
         }
         
@@ -478,8 +492,7 @@ export async function deleteStudentFromSheets(lastName: string, firstName: strin
       }
     }
 
-    const updatedRows = cleanRows.map((row, index) => {
-      const targetRowIdx = index + 2 // 1-based, +1 for header, +1 for row 2 start
+    const updatedRows = cleanRows.map((row) => {
       const rowLastName = (row[0] || '').trim()
       const rowFirstName = (row[1] || '').trim()
 
@@ -497,14 +510,12 @@ export async function deleteStudentFromSheets(lastName: string, firstName: strin
       const email = row[3] || ''
       const program = row[4] || ''
       const reqHours = row[5] || '486'
-      
-      // Regenerate the formula matching the new targetRowIdx
-      const formula = `=F${targetRowIdx}-SUM('${rowTabName}'!E2:E1000) & " hours"`
-      
+      const remainingHours = row[6] || ''
       const estCompletion = row[7] || ''
       const actCompletion = row[8] || ''
       const project = row[9] || ''
       const github = row[10] || ''
+      const rowId = row[11] || ''
 
       return [
         rowLastName.toUpperCase(),
@@ -513,11 +524,12 @@ export async function deleteStudentFromSheets(lastName: string, firstName: strin
         email,
         program.toUpperCase(),
         reqHours,
-        formula,
+        remainingHours,
         estCompletion,
         actCompletion,
         project.toUpperCase(),
-        github
+        github,
+        rowId
       ]
     })
 
@@ -525,7 +537,7 @@ export async function deleteStudentFromSheets(lastName: string, firstName: strin
     if (updatedRows.length > 0) {
       await sheets.spreadsheets.values.update({
         spreadsheetId,
-        range: `${MASTER_SHEET_NAME}!A2:K${updatedRows.length + 1}`,
+        range: `${MASTER_SHEET_NAME}!A2:L${updatedRows.length + 1}`,
         valueInputOption: 'USER_ENTERED',
         requestBody: { values: updatedRows },
       })
@@ -536,7 +548,7 @@ export async function deleteStudentFromSheets(lastName: string, firstName: strin
     if (startClearRow <= 1000) {
       await sheets.spreadsheets.values.clear({
         spreadsheetId,
-        range: `${MASTER_SHEET_NAME}!A${startClearRow}:K1000`,
+        range: `${MASTER_SHEET_NAME}!A${startClearRow}:L1000`,
       })
     }
 

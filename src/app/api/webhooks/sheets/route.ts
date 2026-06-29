@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServiceClient } from '@/lib/supabase/server'
-import { syncStudentToSheets } from '@/lib/sync'
+import { syncInternToSheets } from '@/lib/sync'
+import { randomUUID } from 'crypto'
 
 // Helper to clean and convert DATE (MM/DD/YYYY, MM-DD-YY, or YYYY-MM-DD) → YYYY-MM-DD
 function parseDate(val: unknown): string | null {
@@ -90,7 +91,11 @@ export async function POST(request: Request) {
     const { secret, sheetName, edits } = body
 
     // 1. Verify Secret Token
-    const expectedSecret = process.env.SHEETS_WEBHOOK_SECRET || 'bat-su-ojt-secret-key-2026'
+    const expectedSecret = process.env.SHEETS_WEBHOOK_SECRET
+    if (!expectedSecret) {
+      console.error('[webhook] CRITICAL: SHEETS_WEBHOOK_SECRET is not configured in the environment.')
+      return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 })
+    }
     if (secret !== expectedSecret) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
@@ -151,7 +156,8 @@ export async function POST(request: Request) {
           // A supervisor added a new intern row to the Master sheet.
           // Create a Supabase auth account + student profile automatically.
           const derivedEmail = email || deriveEmail(srCode, firstName, lastName)
-          const defaultPassword = srCode ? `OJT-${srCode}` : 'BatSU-OJT-2026'
+          // Generate a secure, high-entropy random password
+          const defaultPassword = randomUUID()
 
           // Check if an auth user with this email already exists
           const { data: listData } = await supabase.auth.admin.listUsers()
@@ -207,7 +213,7 @@ export async function POST(request: Request) {
 
           // Write-back: push normalized data from DB → Sheet
           try {
-            await syncStudentToSheets(newStudent.id)
+            await syncInternToSheets(newStudent.id)
           } catch (e) {
             console.error(`[webhook] Write-back sync failed for new student ${newStudent.id}:`, e)
           }
@@ -238,7 +244,7 @@ export async function POST(request: Request) {
           // Apps Script installedOnEdit does NOT fire on Sheets API writes,
           // so there is no infinite loop risk here.
           try {
-            await syncStudentToSheets(student.id)
+            await syncInternToSheets(student.id)
           } catch (e) {
             console.error(`[webhook] Write-back sync failed for ${student.id}:`, e)
           }
@@ -298,7 +304,7 @@ export async function POST(request: Request) {
 
             // Write-back after delete so Sheet reflects the DB state
             try {
-              await syncStudentToSheets(student.id)
+              await syncInternToSheets(student.id)
             } catch (e) {
               console.error(`[webhook] Write-back sync failed for ${student.id}:`, e)
             }
@@ -326,7 +332,7 @@ export async function POST(request: Request) {
             // Write-back: push normalized data back to Sheet.
             // onEdit Apps Script does NOT fire for API writes → no loop.
             try {
-              await syncStudentToSheets(student.id)
+              await syncInternToSheets(student.id)
             } catch (e) {
               console.error(`[webhook] Write-back sync failed for ${student.id}:`, e)
             }

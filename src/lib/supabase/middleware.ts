@@ -43,5 +43,20 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(url)
   }
 
+  // Admin route protection: check role from database
+  if (pathname.startsWith('/dashboard/admin')) {
+    const { data: profile } = await supabase
+      .from('students')
+      .select('role')
+      .eq('auth_user_id', user.id)
+      .single()
+
+    if (!profile || profile.role !== 'admin') {
+      const url = request.nextUrl.clone()
+      url.pathname = '/dashboard'
+      return NextResponse.redirect(url)
+    }
+  }
+
   return supabaseResponse
 }

@@ -7,11 +7,11 @@ import { deleteInternAction } from '@/actions/admin'
 import { useRouter } from 'next/navigation'
 
 interface Props {
-  studentId: string
+  internId: string
   lastName: string
 }
 
-export function DeleteInternDialog({ studentId, lastName }: Props) {
+export function DeleteInternDialog({ internId, lastName }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [isPending, startTransition] = useTransition()
@@ -25,7 +25,7 @@ export function DeleteInternDialog({ studentId, lastName }: Props) {
     if (!isMatch) return
 
     startTransition(async () => {
-      const res = await deleteInternAction(studentId)
+      const res = await deleteInternAction(internId)
       if (res?.error) {
         toast.error(res.error)
       } else {

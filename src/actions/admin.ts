@@ -3,11 +3,11 @@
 import { revalidatePath } from 'next/cache'
 import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getMyProfile } from './students'
-import { syncStudentToSheets, deleteStudentFromSheets } from '@/lib/sync'
+import { syncInternToSheets, deleteInternFromSheets } from '@/lib/sync'
 import { z } from 'zod'
 
 const editInternSchema = z.object({
-  studentId: z.string().uuid(),
+  internId: z.string().uuid(),
   required_ojt_hours: z.number().min(1).max(2000),
   assigned_project: z.string().max(300).optional().or(z.literal('')),
   github_link: z.string().url('Enter a valid URL').optional().or(z.literal('')),
@@ -24,7 +24,7 @@ export async function editInternAction(formData: FormData): Promise<{ success?: 
   }
 
   const rawData = {
-    studentId: formData.get('studentId') as string,
+    internId: formData.get('internId') as string,
     required_ojt_hours: Number(formData.get('required_ojt_hours')),
     assigned_project: (formData.get('assigned_project') as string) || '',
     github_link: (formData.get('github_link') as string) || '',
@@ -36,34 +36,34 @@ export async function editInternAction(formData: FormData): Promise<{ success?: 
     return { error: result.error.issues[0].message }
   }
 
-  // Use the service client to bypass RLS for admin updates
-  const supabase = await createServiceClient()
+  // Use the standard client which is protected by RLS
+  const supabase = await createClient()
   const { error } = await supabase
-    .from('students')           // ← was 'profiles' (wrong table)
+    .from('students')
     .update({
       required_ojt_hours: result.data.required_ojt_hours,
       assigned_project: result.data.assigned_project || null,
       github_link: result.data.github_link || null,
       project_github_link: result.data.project_github_link || null,
     })
-    .eq('id', result.data.studentId)
+    .eq('id', result.data.internId)
 
   if (error) return { error: error.message }
 
   // Sync the updated profile back to Google Sheets
   try {
-    await syncStudentToSheets(result.data.studentId)
+    await syncInternToSheets(result.data.internId)
   } catch (e) {
     console.error('[admin] Sync after editIntern failed:', e)
   }
 
   revalidatePath('/dashboard/admin')
-  revalidatePath(`/dashboard/admin/${result.data.studentId}`)
+  revalidatePath(`/dashboard/admin/${result.data.internId}`)
   return { success: true }
 }
 
 const manualLogSchema = z.object({
-  studentId: z.string().uuid(),
+  internId: z.string().uuid(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Invalid date format'),
   time_in: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/, 'Invalid time format'),
   time_out: z.string().regex(/^\d{2}:\d{2}(:\d{2})?$/, 'Invalid time format').optional().or(z.literal('')),
@@ -82,7 +82,7 @@ export async function addManualLogAction(formData: FormData): Promise<{ success?
   }
 
   const rawData = {
-    studentId: formData.get('studentId') as string,
+    internId: formData.get('internId') as string,
     date: formData.get('date') as string,
     time_in: formData.get('time_in') as string,
     time_out: (formData.get('time_out') as string) || '',
@@ -100,7 +100,7 @@ export async function addManualLogAction(formData: FormData): Promise<{ success?
 
   const supabase = await createClient()
   const { error } = await supabase.from('attendance_logs').insert({
-    student_id: result.data.studentId,
+    student_id: result.data.internId,
     date: result.data.date,
     time_in: normaliseTime(result.data.time_in),
     time_out: result.data.time_out ? normaliseTime(result.data.time_out) : null,
@@ -118,31 +118,31 @@ export async function addManualLogAction(formData: FormData): Promise<{ success?
 
   // Sync the updated logs to Google Sheets
   try {
-    await syncStudentToSheets(result.data.studentId)
+    await syncInternToSheets(result.data.internId)
   } catch (e) {
     console.error('[admin] Sync after addManualLog failed:', e)
   }
 
   revalidatePath('/dashboard/admin')
-  revalidatePath(`/dashboard/admin/${result.data.studentId}`)
+  revalidatePath(`/dashboard/admin/${result.data.internId}`)
   return { success: true }
 }
 
 /**
  * Admin: delete an intern profile, cascade logs, delete auth user, and clean up Google Sheet.
  */
-export async function deleteInternAction(studentId: string): Promise<{ success?: boolean; error?: string }> {
+export async function deleteInternAction(internId: string): Promise<{ success?: boolean; error?: string }> {
   const profile = await getMyProfile()
   if (!profile || profile.role !== 'admin') {
     return { error: 'Unauthorized' }
   }
 
-  // 1. Fetch student info before deletion
-  const serviceClient = await createServiceClient()
-  const { data: student, error: fetchError } = await serviceClient
+  // 1. Fetch student info using standard client (enforces RLS)
+  const supabase = await createClient()
+  const { data: student, error: fetchError } = await supabase
     .from('students')
     .select('first_name, last_name, auth_user_id')
-    .eq('id', studentId)
+    .eq('id', internId)
     .maybeSingle()
 
   if (fetchError || !student) {
@@ -151,18 +151,19 @@ export async function deleteInternAction(studentId: string): Promise<{ success?:
 
   const { first_name: firstName, last_name: lastName, auth_user_id: authUserId } = student
 
-  // 2. Delete student profile from public.students (cascades logs)
-  const { error: deleteProfileError } = await serviceClient
+  // 2. Delete student profile from public.students using standard client (enforces RLS)
+  const { error: deleteProfileError } = await supabase
     .from('students')
     .delete()
-    .eq('id', studentId)
+    .eq('id', internId)
 
   if (deleteProfileError) {
     return { error: deleteProfileError.message }
   }
 
-  // 3. Delete auth account
+  // 3. Delete auth account (requires service role bypass)
   if (authUserId) {
+    const serviceClient = await createServiceClient()
     const { error: deleteAuthError } = await serviceClient.auth.admin.deleteUser(authUserId)
     if (deleteAuthError) {
       console.error('[admin] Failed to delete auth user:', deleteAuthError.message)
@@ -171,13 +172,13 @@ export async function deleteInternAction(studentId: string): Promise<{ success?:
 
   // 4. Sync deletion to Google Sheets
   try {
-    await deleteStudentFromSheets(lastName, firstName)
+    await deleteInternFromSheets(internId, lastName, firstName)
   } catch (e) {
     console.error('[admin] Sheets deletion failed:', e)
   }
 
   revalidatePath('/dashboard/admin')
-  revalidatePath(`/dashboard/admin/${studentId}`)
+  revalidatePath(`/dashboard/admin/${internId}`)
   return { success: true }
 }
 

@@ -6,15 +6,15 @@ import { X, PlusCircle } from 'lucide-react'
 import { addManualLogAction } from '@/actions/admin'
 
 interface Props {
-  studentId: string
+  internId: string
 }
 
-export function ManualLogDialog({ studentId }: Props) {
+export function ManualLogDialog({ internId }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   async function onSubmit(formData: FormData) {
-    formData.append('studentId', studentId)
+    formData.append('internId', internId)
     startTransition(async () => {
       const res = await addManualLogAction(formData)
       if (res?.error) {

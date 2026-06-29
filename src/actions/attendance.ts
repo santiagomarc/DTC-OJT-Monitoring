@@ -3,14 +3,14 @@
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import { attendanceLogSchema } from '@/lib/validations'
-import { syncStudentToSheets } from '@/lib/sync'
+import { syncInternToSheets } from '@/lib/sync'
 import type { ActionResult, AttendanceLog } from '@/types'
 
 /**
  * Gets the current logged-in student's DB ID.
  * Returns null if unauthenticated.
  */
-async function getStudentId(): Promise<string | null> {
+async function getInternId(): Promise<string | null> {
   const supabase = await createClient()
   const {
     data: { user },
@@ -33,8 +33,8 @@ export async function createAttendanceLog(
   _: ActionResult,
   formData: FormData
 ): Promise<ActionResult<AttendanceLog>> {
-  const studentId = await getStudentId()
-  if (!studentId) return { success: false, error: 'Not authenticated' }
+  const internId = await getInternId()
+  if (!internId) return { success: false, error: 'Not authenticated' }
 
   const raw = {
     date: formData.get('date') as string,
@@ -63,7 +63,7 @@ export async function createAttendanceLog(
     }
 
     const fileExt = photoFile.name.split('.').pop()
-    const fileName = `${studentId}/${Date.now()}.${fileExt}`
+    const fileName = `${internId}/${Date.now()}.${fileExt}`
     const { error: uploadError } = await supabase.storage
       .from('attendance_photos')
       .upload(fileName, photoFile, {
@@ -83,7 +83,7 @@ export async function createAttendanceLog(
   const { data, error } = await supabase
     .from('attendance_logs')
     .insert({
-      student_id: studentId,
+      student_id: internId,
       date: parsed.data.date,
       time_in: parsed.data.time_in + ':00',
       time_out: parsed.data.time_out
@@ -108,7 +108,7 @@ export async function createAttendanceLog(
 
   // Sync to Sheets
   try {
-    await syncStudentToSheets(studentId)
+    await syncInternToSheets(internId)
   } catch (e) {
     console.error('[sync] Sync failed:', e)
   }
@@ -126,8 +126,8 @@ export async function updateAttendanceLog(
   _: ActionResult,
   formData: FormData
 ): Promise<ActionResult<AttendanceLog>> {
-  const studentId = await getStudentId()
-  if (!studentId) return { success: false, error: 'Not authenticated' }
+  const internId = await getInternId()
+  if (!internId) return { success: false, error: 'Not authenticated' }
 
   const raw = {
     date: formData.get('date') as string,
@@ -157,7 +157,7 @@ export async function updateAttendanceLog(
     }
 
     const fileExt = photoFile.name.split('.').pop()
-    const fileName = `${studentId}/${Date.now()}.${fileExt}`
+    const fileName = `${internId}/${Date.now()}.${fileExt}`
     const { error: uploadError } = await supabase.storage
       .from('attendance_photos')
       .upload(fileName, photoFile, {
@@ -194,7 +194,7 @@ export async function updateAttendanceLog(
     .from('attendance_logs')
     .update(updatePayload)
     .eq('id', logId)
-    .eq('student_id', studentId) // RLS double-check
+    .eq('student_id', internId) // RLS double-check
     .select()
 
   if (error) return { success: false, error: error.message }
@@ -204,7 +204,7 @@ export async function updateAttendanceLog(
 
   // Sync to Sheets
   try {
-    await syncStudentToSheets(studentId)
+    await syncInternToSheets(internId)
   } catch (e) {
     console.error('[sync] Sync failed:', e)
   }
@@ -220,21 +220,21 @@ export async function updateAttendanceLog(
 export async function deleteAttendanceLog(
   logId: string
 ): Promise<ActionResult> {
-  const studentId = await getStudentId()
-  if (!studentId) return { success: false, error: 'Not authenticated' }
+  const internId = await getInternId()
+  if (!internId) return { success: false, error: 'Not authenticated' }
 
   const supabase = await createClient()
   const { error } = await supabase
     .from('attendance_logs')
     .delete()
     .eq('id', logId)
-    .eq('student_id', studentId)
+    .eq('student_id', internId)
 
   if (error) return { success: false, error: error.message }
 
   // Sync to Sheets
   try {
-    await syncStudentToSheets(studentId)
+    await syncInternToSheets(internId)
   } catch (e) {
     console.error('[sync] Sync failed:', e)
   }
@@ -248,14 +248,14 @@ export async function deleteAttendanceLog(
  * READ — Get all logs for the current student (for Server Components).
  */
 export async function getMyAttendanceLogs(): Promise<AttendanceLog[]> {
-  const studentId = await getStudentId()
-  if (!studentId) return []
+  const internId = await getInternId()
+  if (!internId) return []
 
   const supabase = await createClient()
   const { data } = await supabase
     .from('attendance_logs')
     .select('*')
-    .eq('student_id', studentId)
+    .eq('student_id', internId)
     .order('date', { ascending: false })
 
   return (data as AttendanceLog[]) ?? []

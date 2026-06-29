@@ -112,8 +112,8 @@ export async function signupAction(
   }
 
   try {
-    const { syncStudentToSheets } = await import('@/lib/sync')
-    await syncStudentToSheets(studentData.id)
+    const { syncInternToSheets } = await import('@/lib/sync')
+    await syncInternToSheets(studentData.id)
   } catch (err) {
     console.error('Failed to sync new student to sheets:', err)
   }
