@@ -22,7 +22,7 @@ BEGIN
     days_to_add := CEIL(remaining_hours / avg_hours);
 
     WHILE days_added < days_to_add LOOP
-        current_d := current_d + INTERVAL '1 day';
+        current_d := current_d + 1;
         -- ISODOW: 1=Mon, 2=Tue, 3=Wed, 4=Thu, 5=Fri, 6=Sat, 7=Sun
         IF EXTRACT(ISODOW FROM current_d) <= 4 THEN
             days_added := days_added + 1;
