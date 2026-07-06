@@ -16,8 +16,8 @@ export default function SignupPage() {
 
       <div className="relative z-10 w-full max-w-lg">
         <div className="mb-8 text-center">
-          <div className="mb-4 inline-flex h-16 w-16 items-center justify-center rounded-3xl bg-gradient-to-br from-red-600 to-orange-700 text-3xl shadow-xl shadow-orange-500/20">
-            🎓
+          <div className="mb-4 inline-flex h-20 w-20 items-center justify-center rounded-3xl bg-white shadow-xl shadow-orange-500/20 overflow-hidden p-2">
+            <img src="/dtc-logo.png" alt="DTC Logo" className="h-full w-full object-contain" />
           </div>
           <h1 className="text-3xl font-black tracking-tight text-stone-900 dark:text-white">
             Create Your Account
