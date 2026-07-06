@@ -15,9 +15,7 @@ export function AdminHeader({ profile }: AdminHeaderProps) {
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-stone-200 bg-stone-50/80 px-6 backdrop-blur-md dark:border-white/10 dark:bg-stone-900/80">
       {/* Brand */}
       <div className="flex items-center gap-3">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-white shadow-sm shadow-red-500/25 overflow-hidden p-1">
-          <img src="/dtc-logo.png" alt="DTC Logo" className="h-full w-full object-contain" />
-        </div>
+        <img src="/dtc-logo.png" alt="DTC Logo" className="h-10 w-auto object-contain" />
         <div>
           <p className="text-sm font-bold leading-tight text-stone-900 dark:text-white">BatSU DTC</p>
           <p className="text-xs text-stone-500 dark:text-stone-400">Master Dashboard</p>

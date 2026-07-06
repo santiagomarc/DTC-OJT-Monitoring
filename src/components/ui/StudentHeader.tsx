@@ -14,9 +14,7 @@ export function StudentHeader({ profile }: StudentHeaderProps) {
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-stone-200 bg-stone-50/80 px-6 backdrop-blur-md dark:border-white/10 dark:bg-stone-950/70">
       {/* Brand */}
       <div className="flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white shadow-md shadow-red-500/20 overflow-hidden p-1">
-          <img src="/dtc-logo.png" alt="DTC Logo" className="h-full w-full object-contain" />
-        </div>
+        <img src="/dtc-logo.png" alt="DTC Logo" className="h-10 w-auto object-contain" />
         <div>
           <p className="text-sm font-black tracking-tight text-stone-900 dark:text-white uppercase">BatSU DTC</p>
           <p className="text-[10px] font-semibold text-red-600 dark:text-red-400 uppercase tracking-widest">OJT Monitoring</p>
