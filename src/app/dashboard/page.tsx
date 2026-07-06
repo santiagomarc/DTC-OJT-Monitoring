@@ -65,9 +65,7 @@ export default async function StudentDashboardPage() {
       {/* Welcome Header */}
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-red-600 to-orange-700 p-8 text-white shadow-xl shadow-orange-500/10">
         <div className="relative z-10 space-y-2">
-          <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold uppercase tracking-wider backdrop-blur-md">
-            Intern Space
-          </span>
+
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
             Welcome back, {profile.first_name} 👋
           </h1>

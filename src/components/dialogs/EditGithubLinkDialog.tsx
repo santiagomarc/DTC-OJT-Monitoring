@@ -36,7 +36,7 @@ export function EditGithubLinkDialog({ initialValue }: Props) {
       </button>
 
       {isOpen && (
-        <div className="absolute inset-0 z-50 flex flex-col justify-center bg-white p-6 backdrop-blur-xl dark:bg-stone-900/95 animate-in fade-in zoom-in-95 duration-200">
+        <div className="absolute inset-0 z-50 flex flex-col justify-center bg-white/90 p-6 backdrop-blur-xl dark:bg-stone-900/90 animate-in fade-in zoom-in-95 duration-200">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wider text-stone-900 dark:text-white">
               Edit GitHub Link
