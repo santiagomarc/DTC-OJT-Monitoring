@@ -16,7 +16,7 @@ export default function SignupPage() {
 
       <div className="relative z-10 w-full max-w-lg">
         <div className="mb-8 text-center">
-          <img src="/dtc-logo.png" alt="DTC Logo" className="mx-auto -mb-6 w-72 h-auto object-contain relative z-10" />
+          <img src="/dtc-logo.png" alt="DTC Logo" className="mx-auto mb-2 w-72 h-auto object-contain relative z-10" />
           <h1 className="text-3xl font-black tracking-tight text-stone-900 dark:text-white">
             Create Your Account
           </h1>
