@@ -105,7 +105,7 @@ export default async function StudentDashboardPage() {
                   Not linked yet
                 </p>
               )}
-              <p className="text-xs text-stone-550 dark:text-stone-400">
+              <p className="text-xs text-stone-500 dark:text-stone-400">
                 {profile.github_link ? 'Click above to open the repository.' : 'Link your GitHub repo to sync codebase contributions.'}
               </p>
             </div>

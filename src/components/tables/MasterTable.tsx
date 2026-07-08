@@ -79,8 +79,8 @@ export function MasterTable({ students, sheetUrl }: Props) {
     ].join(',')
 
     const rows = sorted.map((s) => {
-        const projectNames = s.projects?.map(p => p.name).join(' | ') || s.assigned_project || ''
-        const projectLinks = s.projects?.map(p => p.github_link).filter(Boolean).join(' | ') || s.project_github_link || ''
+      const projectNames = s.projects?.map(p => p.name).join(' | ') || s.assigned_project || ''
+      const projectLinks = s.projects?.map(p => p.github_link).filter(Boolean).join(' | ') || s.project_github_link || ''
 
       return [
         `"${(s.last_name || '').replace(/"/g, '""')}"`,

@@ -13,7 +13,7 @@ const editInternSchema = z.object({
 })
 
 /**
- * Admin: update an intern's required hours, project, and github link.
+ * Admin: update an intern's required hours and github link.
  */
 export async function editInternAction(formData: FormData): Promise<{ success?: boolean; error?: string }> {
   const profile = await getMyProfile()

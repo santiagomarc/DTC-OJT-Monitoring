@@ -49,16 +49,16 @@ export interface StudentProgress {
   email: string | null
   program: string
   required_ojt_hours: number
-  assigned_project: string | null
-  github_link: string | null
-  project_github_link: string | null
-  role: UserRole
+  assigned_project?: string | null
+  project_github_link?: string | null
+  github_link?: string | null
+  role: 'student' | 'admin'
   total_rendered_hours: number
   remaining_hours: number
   estimated_completion_date: string | null
   total_days_logged: number
   last_attendance_date: string | null
-  projects?: StudentProject[] // Fetched separately
+  projects?: StudentProject[]
 }
 
 // Form value types (before DB insert)

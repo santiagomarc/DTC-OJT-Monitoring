@@ -30,7 +30,6 @@ export async function getMyProgress(): Promise<StudentProgress | null> {
 
   if (!data) return null
 
-  // Fetch their projects as well
   const { data: projects } = await supabase
     .from('student_projects')
     .select('*')
@@ -56,7 +55,6 @@ export async function getAllStudentProgress(): Promise<StudentProgress[]> {
 
   const students = (data as StudentProgress[]) ?? []
 
-  // Fetch all projects for these students
   const { data: allProjects } = await supabase
     .from('student_projects')
     .select('*')
