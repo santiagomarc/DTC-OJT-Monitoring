@@ -17,6 +17,15 @@ export interface Student {
   updated_at: string
 }
 
+export interface StudentProject {
+  id: string
+  student_id: string
+  name: string
+  github_link: string | null
+  created_at: string
+  updated_at: string
+}
+
 export interface AttendanceLog {
   id: string
   student_id: string
@@ -49,6 +58,7 @@ export interface StudentProgress {
   estimated_completion_date: string | null
   total_days_logged: number
   last_attendance_date: string | null
+  projects?: StudentProject[] // Fetched separately
 }
 
 // Form value types (before DB insert)
@@ -66,9 +76,7 @@ export interface StudentProfileFormValues {
   sr_code: string
   program: string
   required_ojt_hours: number
-  assigned_project: string
   github_link: string
-  project_github_link: string
 }
 
 // Action response type

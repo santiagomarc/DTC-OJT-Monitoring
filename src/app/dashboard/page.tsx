@@ -4,9 +4,9 @@ import { getMyProfile, getMyProgress } from '@/actions/students'
 import { getMyAttendanceLogs } from '@/actions/attendance'
 import { ProgressCard } from '@/components/ui/ProgressCard'
 import { AttendanceLogsClient } from '@/components/tables/AttendanceLogsClient'
-import { EditProjectDialog } from '@/components/dialogs/EditProjectDialog'
+import { ProjectCard } from '@/components/ui/ProjectCard'
 import { EditGithubLinkDialog } from '@/components/dialogs/EditGithubLinkDialog'
-import { Briefcase, ShieldAlert } from 'lucide-react'
+import { ShieldAlert } from 'lucide-react'
 
 // Custom GitHub icon to avoid lucide-react brand icon deprecation issues
 function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
@@ -78,46 +78,10 @@ export default async function StudentDashboardPage() {
         <div className="absolute left-1/3 bottom-0 -ml-16 -mb-16 h-48 w-48 rounded-full bg-orange-500/30 blur-3xl" />
       </div>
 
-      {/* Internship Details Cards (Project & GitHub Link above stat boxes) */}
+      {/* Internship Details Cards */}
       <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-        {/* Project Card */}
-        <div className="group relative overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-50/80 p-6 dark:border-white/10 dark:bg-stone-900/40 backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">
-          <div className="flex items-start justify-between gap-4">
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-stone-400 dark:text-stone-500">
-                <Briefcase className="h-3.5 w-3.5 text-red-500" />
-                <span>Assigned Project</span>
-              </div>
-              {profile.assigned_project ? (
-                profile.project_github_link ? (
-                  <a
-                    href={profile.project_github_link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1.5 text-lg font-black text-red-600 dark:text-red-400 hover:underline leading-tight"
-                  >
-                    <span>{profile.assigned_project}</span>
-                    <GithubIcon className="h-4 w-4 inline-block shrink-0" />
-                  </a>
-                ) : (
-                  <p className="text-lg font-black text-stone-900 dark:text-white leading-tight">
-                    {profile.assigned_project}
-                  </p>
-                )
-              ) : (
-                <p className="text-lg font-bold text-stone-400 dark:text-stone-500 italic">
-                  No project assigned yet
-                </p>
-              )}
-              <p className="text-xs text-stone-550 dark:text-stone-400">
-                {profile.assigned_project ? 'Keep your project title updated.' : 'Request your project supervisor to assign one.'}
-              </p>
-            </div>
-            <div className="shrink-0 rounded-xl bg-red-500/10 p-1 dark:bg-red-500/20 text-red-600 dark:text-red-400">
-              <EditProjectDialog initialValue={profile.assigned_project} initialGithubLink={profile.project_github_link} />
-            </div>
-          </div>
-        </div>
+        {/* Project Card (Carousel) */}
+        <ProjectCard projects={progress?.projects || []} />
 
         {/* GitHub Card */}
         <div className="group relative overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-50/80 p-6 dark:border-white/10 dark:bg-stone-900/40 backdrop-blur-md shadow-sm transition-all duration-300 hover:-translate-y-1 hover:shadow-md">

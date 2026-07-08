@@ -9,8 +9,6 @@ interface Props {
   internId: string
   initialData: {
     required_ojt_hours: number
-    assigned_project?: string | null
-    github_link?: string | null
   }
 }
 
@@ -63,28 +61,6 @@ export function EditInternDialog({ internId, initialData }: Props) {
                   defaultValue={initialData.required_ojt_hours}
                   required
                   min="1"
-                  className="input"
-                />
-              </div>
-
-              <div>
-                <label className="label">Assigned Project</label>
-                <input
-                  type="text"
-                  name="assigned_project"
-                  defaultValue={initialData.assigned_project || ''}
-                  placeholder="e.g. Chatbot AI"
-                  className="input"
-                />
-              </div>
-
-              <div>
-                <label className="label">GitHub Link</label>
-                <input
-                  type="url"
-                  name="github_link"
-                  defaultValue={initialData.github_link || ''}
-                  placeholder="https://github.com/..."
                   className="input"
                 />
               </div>

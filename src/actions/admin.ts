@@ -9,9 +9,7 @@ import { z } from 'zod'
 const editInternSchema = z.object({
   internId: z.string().uuid(),
   required_ojt_hours: z.number().min(1).max(2000),
-  assigned_project: z.string().max(300).optional().or(z.literal('')),
   github_link: z.string().url('Enter a valid URL').optional().or(z.literal('')),
-  project_github_link: z.string().url('Enter a valid URL').optional().or(z.literal('')),
 })
 
 /**
@@ -26,9 +24,7 @@ export async function editInternAction(formData: FormData): Promise<{ success?: 
   const rawData = {
     internId: formData.get('internId') as string,
     required_ojt_hours: Number(formData.get('required_ojt_hours')),
-    assigned_project: (formData.get('assigned_project') as string) || '',
     github_link: (formData.get('github_link') as string) || '',
-    project_github_link: (formData.get('project_github_link') as string) || '',
   }
 
   const result = editInternSchema.safeParse(rawData)
@@ -42,9 +38,7 @@ export async function editInternAction(formData: FormData): Promise<{ success?: 
     .from('students')
     .update({
       required_ojt_hours: result.data.required_ojt_hours,
-      assigned_project: result.data.assigned_project || null,
       github_link: result.data.github_link || null,
-      project_github_link: result.data.project_github_link || null,
     })
     .eq('id', result.data.internId)
 

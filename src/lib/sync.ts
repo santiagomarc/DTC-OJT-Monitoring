@@ -182,6 +182,16 @@ export async function syncInternToSheets(internId: string): Promise<void> {
       return
     }
 
+    // ── 2.5 Fetch projects ────────────────────────────────────
+    const { data: projects, error: projectsError } = await supabase
+      .from('student_projects')
+      .select('name, github_link')
+      .eq('student_id', internId)
+      .order('created_at', { ascending: true })
+
+    const projectNames = projects?.map(p => p.name).join(' | ') || progress.assigned_project || ''
+    const projectLinks = projects?.map(p => p.github_link).filter(Boolean).join(' | ') || progress.project_github_link || ''
+
     const tabName = toSheetTabName(progress.last_name, progress.first_name)
 
     // ── 3. Update Master Sheet ────────────────────────────────
@@ -239,8 +249,8 @@ export async function syncInternToSheets(internId: string): Promise<void> {
             remainingHoursText,                                             // col G: REMAINING HOURS (statically computed)
             formatDate(progress.estimated_completion_date),                 // col H: ESTIMATED COMPLETION
             '',                                                             // col I: ACTUAL COMPLETION
-            progress.assigned_project?.toUpperCase() ?? '',                 // col J: ASSIGNED PROJECT
-            progress.github_link ?? '',                                     // col K: GITHUB LINK
+            projectNames.toUpperCase(),                                     // col J: ASSIGNED PROJECT
+            projectLinks,                                                   // col K: GITHUB LINK
             internId,                                                      // col L: STUDENT ID
           ]]
         }
@@ -276,8 +286,8 @@ export async function syncInternToSheets(internId: string): Promise<void> {
         remainingHoursText,                                             // col G: REMAINING HOURS (statically computed)
         formatDate(progress.estimated_completion_date),                 // col H: ESTIMATED COMPLETION
         existingActualCompletion,                                       // col I: ACTUAL COMPLETION
-        progress.assigned_project?.toUpperCase() ?? '',                 // col J: ASSIGNED PROJECT
-        progress.github_link ?? '',                                     // col K: GITHUB LINK
+        projectNames.toUpperCase(),                                     // col J: ASSIGNED PROJECT
+        projectLinks,                                                   // col K: GITHUB LINK
         internId,                                                      // col L: STUDENT ID
       ]
 

@@ -79,6 +79,9 @@ export function MasterTable({ students, sheetUrl }: Props) {
     ].join(',')
 
     const rows = sorted.map((s) => {
+        const projectNames = s.projects?.map(p => p.name).join(' | ') || s.assigned_project || ''
+        const projectLinks = s.projects?.map(p => p.github_link).filter(Boolean).join(' | ') || s.project_github_link || ''
+
       return [
         `"${(s.last_name || '').replace(/"/g, '""')}"`,
         `"${(s.first_name || '').replace(/"/g, '""')}"`,
@@ -89,8 +92,8 @@ export function MasterTable({ students, sheetUrl }: Props) {
         Number(s.total_rendered_hours).toFixed(1),
         Number(s.remaining_hours).toFixed(1),
         s.estimated_completion_date ? `"${s.estimated_completion_date}"` : 'TBD',
-        `"${(s.assigned_project || '').replace(/"/g, '""')}"`,
-        `"${(s.github_link || '').replace(/"/g, '""')}"`,
+        `"${projectNames.replace(/"/g, '""')}"`,
+        `"${projectLinks.replace(/"/g, '""')}"`,
       ].join(',')
     })
 

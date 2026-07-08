@@ -7,8 +7,10 @@ import { ProgressCard } from '@/components/ui/ProgressCard'
 import Link from 'next/link'
 import { ArrowLeft } from 'lucide-react'
 import { EditInternDialog } from '@/components/dialogs/EditInternDialog'
+import { AdminProjectsSection } from '@/components/ui/AdminProjectsSection'
 import { ManualLogDialog } from '@/components/dialogs/ManualLogDialog'
 import { DeleteInternDialog } from '@/components/dialogs/DeleteInternDialog'
+import { getStudentProjects } from '@/actions/projects'
 
 interface Props {
   params: Promise<{ internId: string }>
@@ -40,6 +42,8 @@ export default async function AdminStudentDetailPage({ params }: Props) {
     .eq('student_id', internId)
     .order('date', { ascending: false })
 
+  const projects = await getStudentProjects(internId)
+
   return (
     <div className="space-y-8">
       <div>
@@ -63,8 +67,6 @@ export default async function AdminStudentDetailPage({ params }: Props) {
               internId={internId}
               initialData={{
                 required_ojt_hours: progress.required_ojt_hours,
-                assigned_project: progress.assigned_project,
-                github_link: progress.github_link,
               }}
             />
             <DeleteInternDialog
@@ -77,24 +79,7 @@ export default async function AdminStudentDetailPage({ params }: Props) {
 
       <ProgressCard progress={progress} />
 
-      {progress.assigned_project && (
-        <div className="card">
-          <p className="text-xs font-medium uppercase tracking-wider text-stone-500 dark:text-stone-400">
-            Assigned Project
-          </p>
-          <p className="mt-2 text-stone-900 dark:text-white">{progress.assigned_project}</p>
-          {progress.github_link && (
-            <a
-              href={progress.github_link}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="mt-2 inline-block text-sm text-red-600 hover:text-red-500 transition-colors dark:text-red-400 dark:hover:text-red-300"
-            >
-              View on GitHub →
-            </a>
-          )}
-        </div>
-      )}
+      <AdminProjectsSection internId={internId} projects={projects} />
 
       <div>
         <div className="mb-4 flex items-center justify-between">

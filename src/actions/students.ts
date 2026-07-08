@@ -28,7 +28,19 @@ export async function getMyProgress(): Promise<StudentProgress | null> {
     .eq('auth_user_id', user.id)
     .single()
 
-  return data as StudentProgress | null
+  if (!data) return null
+
+  // Fetch their projects as well
+  const { data: projects } = await supabase
+    .from('student_projects')
+    .select('*')
+    .eq('student_id', data.id)
+    .order('created_at', { ascending: true })
+
+  return {
+    ...data,
+    projects: projects || []
+  } as StudentProgress
 }
 
 /**
@@ -42,7 +54,22 @@ export async function getAllStudentProgress(): Promise<StudentProgress[]> {
     .eq('role', 'student')
     .order('last_name', { ascending: true })
 
-  return (data as StudentProgress[]) ?? []
+  const students = (data as StudentProgress[]) ?? []
+
+  // Fetch all projects for these students
+  const { data: allProjects } = await supabase
+    .from('student_projects')
+    .select('*')
+    .in('student_id', students.map(s => s.id))
+    .order('created_at', { ascending: true })
+
+  if (allProjects) {
+    students.forEach(student => {
+      student.projects = allProjects.filter(p => p.student_id === student.id)
+    })
+  }
+
+  return students
 }
 
 /**
@@ -58,13 +85,22 @@ export async function getStudentProgressById(
     .eq('id', internId)
     .single()
 
-  return data as StudentProgress | null
+  if (!data) return null
+  const progress = data as StudentProgress
+
+  const { data: projects } = await supabase
+    .from('student_projects')
+    .select('*')
+    .eq('student_id', internId)
+    .order('created_at', { ascending: true })
+    
+  progress.projects = projects || []
+
+  return progress
 }
 
 const updateProfileSchema = z.object({
-  assigned_project: z.string().max(300).optional(),
   github_link: z.string().url('Enter a valid URL').optional().or(z.literal('')),
-  project_github_link: z.string().url('Enter a valid URL').optional().or(z.literal('')),
 })
 
 /**
@@ -79,14 +115,8 @@ export async function updateStudentProfileAction(
   }
 
   const rawData: any = {}
-  if (formData.has('assigned_project')) {
-    rawData.assigned_project = (formData.get('assigned_project') as string) || ''
-  }
   if (formData.has('github_link')) {
     rawData.github_link = (formData.get('github_link') as string) || ''
-  }
-  if (formData.has('project_github_link')) {
-    rawData.project_github_link = (formData.get('project_github_link') as string) || ''
   }
 
   const result = updateProfileSchema.safeParse(rawData)
@@ -95,14 +125,8 @@ export async function updateStudentProfileAction(
   }
 
   const updatePayload: any = {}
-  if ('assigned_project' in result.data) {
-    updatePayload.assigned_project = result.data.assigned_project || null
-  }
   if ('github_link' in result.data) {
     updatePayload.github_link = result.data.github_link || null
-  }
-  if ('project_github_link' in result.data) {
-    updatePayload.project_github_link = result.data.project_github_link || null
   }
 
   const supabase = await createClient()

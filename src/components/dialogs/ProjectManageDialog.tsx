@@ -1,27 +1,45 @@
-
 'use client'
 
 import { useState, useTransition } from 'react'
 import { toast } from 'sonner'
-import { X, Pencil } from 'lucide-react'
-import { updateStudentProfileAction } from '@/actions/students'
+import { X, Pencil, Plus } from 'lucide-react'
+import { addProjectAction, updateProjectAction, adminAddProjectAction, adminUpdateProjectAction } from '@/actions/projects'
+import type { StudentProject } from '@/types'
 
 interface Props {
-  initialValue?: string | null
-  initialGithubLink?: string | null
+  mode: 'add' | 'edit'
+  internId?: string // if provided, uses admin actions
+  project?: StudentProject
+  trigger?: React.ReactNode // Custom trigger button
 }
 
-export function EditProjectDialog({ initialValue, initialGithubLink }: Props) {
+export function ProjectManageDialog({ mode, internId, project, trigger }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [isPending, startTransition] = useTransition()
 
   async function onSubmit(formData: FormData) {
     startTransition(async () => {
-      const res = await updateStudentProfileAction(formData)
+      let res
+      
+      if (mode === 'add') {
+        if (internId) {
+          res = await adminAddProjectAction(internId, formData)
+        } else {
+          res = await addProjectAction(formData)
+        }
+      } else {
+        formData.append('projectId', project!.id)
+        if (internId) {
+          res = await adminUpdateProjectAction(internId, formData)
+        } else {
+          res = await updateProjectAction(formData)
+        }
+      }
+
       if (res?.error) {
         toast.error(res.error)
       } else {
-        toast.success('Assigned project updated successfully')
+        toast.success(mode === 'add' ? 'Project added successfully' : 'Project updated successfully')
         setIsOpen(false)
       }
     })
@@ -29,19 +47,22 @@ export function EditProjectDialog({ initialValue, initialGithubLink }: Props) {
 
   return (
     <>
-      <button
-        onClick={() => setIsOpen(true)}
-        className="rounded-lg p-2 text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:text-stone-500 dark:hover:bg-white/5 dark:hover:text-white transition"
-        title="Edit Project"
-      >
-        <Pencil className="h-4 w-4" />
-      </button>
+      <div onClick={() => setIsOpen(true)}>
+        {trigger || (
+          <button
+            className="rounded-lg p-2 text-stone-400 hover:bg-stone-100 hover:text-stone-700 dark:text-stone-500 dark:hover:bg-white/5 dark:hover:text-white transition"
+            title={mode === 'add' ? 'Add Project' : 'Edit Project'}
+          >
+            {mode === 'add' ? <Plus className="h-4 w-4" /> : <Pencil className="h-4 w-4" />}
+          </button>
+        )}
+      </div>
 
       {isOpen && (
         <div className="absolute inset-0 z-50 flex flex-col justify-center bg-white/90 p-6 backdrop-blur-xl dark:bg-stone-900/90 animate-in fade-in zoom-in-95 duration-200">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-bold uppercase tracking-wider text-stone-900 dark:text-white">
-              Edit Assigned Project
+              {mode === 'add' ? 'Add New Project' : 'Edit Project'}
             </h2>
             <button
               onClick={() => setIsOpen(false)}
@@ -51,19 +72,19 @@ export function EditProjectDialog({ initialValue, initialGithubLink }: Props) {
             </button>
           </div>
 
-          <form action={onSubmit} className="flex gap-3">
+          <form action={onSubmit} className="flex flex-col gap-3 sm:flex-row">
             <input
               type="text"
-              name="assigned_project"
-              defaultValue={initialValue || ''}
+              name="name"
+              defaultValue={project?.name || ''}
               placeholder="Project Title"
               className="input flex-1 !h-10 !py-2"
               required
             />
             <input
               type="url"
-              name="project_github_link"
-              defaultValue={initialGithubLink || ''}
+              name="github_link"
+              defaultValue={project?.github_link || ''}
               placeholder="GitHub Repo URL (Optional)"
               className="input flex-1 !h-10 !py-2"
             />
