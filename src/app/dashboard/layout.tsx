@@ -3,7 +3,6 @@ import { getCachedUser } from '@/lib/cache'
 import { getMyProfile } from '@/actions/students'
 import { StudentHeader } from '@/components/ui/StudentHeader'
 import { AdminHeader } from '@/components/ui/AdminHeader'
-import { createClient } from '@/lib/supabase/server'
 
 
 export default async function DashboardLayout({

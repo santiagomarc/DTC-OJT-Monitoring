@@ -8,10 +8,13 @@ import type { AttendanceLog, ActionResult } from '@/types'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
+import { WelcomeCard } from '@/components/ui/WelcomeCard'
 
 interface Props {
   initialLogs: AttendanceLog[]
   internId: string
+  firstName: string
+  program: string
 }
 
 const emptyState: ActionResult = { success: false }
@@ -278,20 +281,15 @@ function AttendanceForm({
   )
 }
 
-export function AttendanceLogsClient({ initialLogs, internId }: Props) {
+export function AttendanceLogsClient({ initialLogs, internId, firstName, program }: Props) {
   const [logs, setLogs] = useState<AttendanceLog[]>(initialLogs)
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [selectedLog, setSelectedLog] = useState<AttendanceLog | null>(null)
   const [isPending, startTransition] = useTransition()
 
-  // Sync logs when server re-fetches (e.g. after a router.refresh() from a ClockButton outside)
-  useEffect(() => {
-    setLogs(initialLogs)
-  }, [initialLogs])
-
   const [isSyncing, startSyncTransition] = useTransition()
-  const activeLog = logs.find((l) => l.time_out === null)
+  const activeLog = logs.find((l) => l.time_out === null) ?? null
 
   function handleClockAction() {
     startSyncTransition(async () => {
@@ -344,6 +342,15 @@ export function AttendanceLogsClient({ initialLogs, internId }: Props) {
 
   return (
     <div className="space-y-6">
+      {/* Welcome Greeting Card — rendered here so it shares the same logs state for instant clock updates */}
+      <WelcomeCard
+        firstName={firstName}
+        program={program}
+        activeLog={activeLog}
+        isSyncing={isSyncing}
+        onClockAction={handleClockAction}
+      />
+
       {/* Header and Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-stone-250/20 dark:border-white/5 pb-4">
         <div>

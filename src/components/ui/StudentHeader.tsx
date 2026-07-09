@@ -7,6 +7,7 @@ import { ThemeToggle } from './ThemeToggle'
 
 interface StudentHeaderProps {
   profile: Student
+  activeSessionId?: string | null
 }
 
 export function StudentHeader({ profile }: StudentHeaderProps) {
@@ -23,9 +24,6 @@ export function StudentHeader({ profile }: StudentHeaderProps) {
 
       {/* Right side: User Info, Theme Toggle, Logout */}
       <div className="flex items-center gap-4">
-
-        <div className="h-8 w-px bg-stone-200 dark:bg-white/10 hidden sm:block" />
-
         <div className="hidden text-right md:block">
           <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">Intern Account</p>
           <p className="text-sm font-bold text-stone-900 dark:text-white">
