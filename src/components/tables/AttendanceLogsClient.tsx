@@ -285,6 +285,11 @@ export function AttendanceLogsClient({ initialLogs, internId }: Props) {
   const [selectedLog, setSelectedLog] = useState<AttendanceLog | null>(null)
   const [isPending, startTransition] = useTransition()
 
+  // Sync logs when server re-fetches (e.g. after a router.refresh() from a ClockButton outside)
+  useEffect(() => {
+    setLogs(initialLogs)
+  }, [initialLogs])
+
   const [isSyncing, startSyncTransition] = useTransition()
   const activeLog = logs.find((l) => l.time_out === null)
 

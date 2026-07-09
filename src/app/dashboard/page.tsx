@@ -6,6 +6,7 @@ import { ProgressCard } from '@/components/ui/ProgressCard'
 import { AttendanceLogsClient } from '@/components/tables/AttendanceLogsClient'
 import { ProjectCard } from '@/components/ui/ProjectCard'
 import { EditGithubLinkDialog } from '@/components/dialogs/EditGithubLinkDialog'
+import { ClockButton } from '@/components/ui/ClockButton'
 import { ShieldAlert } from 'lucide-react'
 
 // Custom GitHub icon to avoid lucide-react brand icon deprecation issues
@@ -26,33 +27,15 @@ function GithubIcon(props: React.SVGProps<SVGSVGElement>) {
   )
 }
 
-function AttendanceLogsSkeleton() {
-  return (
-    <div className="space-y-4 animate-pulse">
-      <div className="space-y-2">
-        <div className="h-6 w-48 rounded bg-stone-200 dark:bg-stone-850" />
-        <div className="h-4 w-72 rounded bg-stone-200 dark:bg-stone-850" />
-      </div>
-      <div className="space-y-3 pt-4">
-        {[1, 2, 3].map((n) => (
-          <div key={n} className="h-20 rounded-2xl bg-stone-100 dark:bg-stone-900/60" />
-        ))}
-      </div>
-    </div>
-  )
-}
-
-async function AttendanceLogsSection({ internId }: { internId: string }) {
-  const logs = await getMyAttendanceLogs()
-  return <AttendanceLogsClient initialLogs={logs} internId={internId} />
-}
+// Removed AttendanceLogsSection and AttendanceLogsSkeleton as we'll fetch logs at the page level
 
 export const metadata = { title: 'Dashboard — BatSU OJT Monitor' }
 
 export default async function StudentDashboardPage() {
-  const [profile, progress] = await Promise.all([
+  const [profile, progress, logs] = await Promise.all([
     getMyProfile(),
     getMyProgress(),
+    getMyAttendanceLogs(),
   ])
 
   if (!profile) redirect('/login')
@@ -60,12 +43,13 @@ export default async function StudentDashboardPage() {
   // Admins go to their own dashboard
   if (profile.role === 'admin') redirect('/dashboard/admin')
 
+  const activeSessionId = logs.length > 0 && logs[0].time_out === null ? logs[0].id : null
+
   return (
     <div className="space-y-8 py-4">
       {/* Welcome Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-red-600 to-orange-700 p-8 text-white shadow-xl shadow-orange-500/10">
-        <div className="relative z-10 space-y-2">
-
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-red-600 to-orange-700 p-8 text-white shadow-xl shadow-orange-500/10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+        <div className="relative z-10 space-y-2 flex-1">
           <h1 className="text-3xl font-black tracking-tight sm:text-4xl md:text-5xl">
             Welcome back, {profile.first_name} 👋
           </h1>
@@ -73,9 +57,20 @@ export default async function StudentDashboardPage() {
             Track your hours, submit daily logs, and monitor your overall progress in the {profile.program} OJT Program.
           </p>
         </div>
+        
+        {/* Clock In/Out Action on the right side */}
+        <div className="relative z-10 md:self-stretch flex items-center justify-start md:justify-end">
+          <div className="rounded-2xl bg-white/10 p-4 backdrop-blur-md border border-white/20 shadow-inner flex flex-col gap-2 items-start md:items-end w-full md:w-auto">
+            <p className="text-xs font-bold text-red-100 uppercase tracking-wider">Quick Action</p>
+            <div className="w-full sm:w-auto">
+              <ClockButton activeSessionId={activeSessionId} className="w-full justify-center !bg-white !text-orange-600 hover:!bg-red-50 dark:!bg-stone-900 dark:!text-orange-500 shadow-xl" />
+            </div>
+          </div>
+        </div>
+
         {/* Abstract background blur */}
-        <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
-        <div className="absolute left-1/3 bottom-0 -ml-16 -mb-16 h-48 w-48 rounded-full bg-orange-500/30 blur-3xl" />
+        <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-white/10 blur-3xl pointer-events-none" />
+        <div className="absolute left-1/3 bottom-0 -ml-16 -mb-16 h-48 w-48 rounded-full bg-orange-500/30 blur-3xl pointer-events-none" />
       </div>
 
       {/* Projects & Portfolio */}
@@ -92,9 +87,7 @@ export default async function StudentDashboardPage() {
       )}
 
       {/* Attendance Logs Client Section */}
-      <Suspense fallback={<AttendanceLogsSkeleton />}>
-        <AttendanceLogsSection internId={profile.id} />
-      </Suspense>
+      <AttendanceLogsClient initialLogs={logs} internId={profile.id} />
     </div>
   )
 }

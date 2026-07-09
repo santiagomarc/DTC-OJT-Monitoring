@@ -8,9 +8,10 @@ import { clockInAction, clockOutAction } from '@/actions/attendance'
 
 interface ClockButtonProps {
   activeSessionId: string | null
+  className?: string
 }
 
-export function ClockButton({ activeSessionId }: ClockButtonProps) {
+export function ClockButton({ activeSessionId, className = '' }: ClockButtonProps) {
   const router = useRouter()
   const [isPending, startTransition] = useTransition()
   const [localActiveId, setLocalActiveId] = useState<string | null>(activeSessionId)
@@ -54,7 +55,7 @@ export function ClockButton({ activeSessionId }: ClockButtonProps) {
         isActive
           ? 'bg-gradient-to-r from-amber-500 to-orange-600 shadow-orange-500/25'
           : 'bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/25'
-      }`}
+      } ${className}`}
     >
       <Clock className="h-4 w-4 shrink-0" />
       <span>{isPending ? 'Processing…' : isActive ? 'Clock Out' : 'Clock In'}</span>
