@@ -8,13 +8,14 @@ import type { AttendanceLog, ActionResult } from '@/types'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
 import Link from 'next/link'
-import { WelcomeCard } from '@/components/ui/WelcomeCard'
 
 interface Props {
-  initialLogs: AttendanceLog[]
+  logs: AttendanceLog[]
+  setLogs: React.Dispatch<React.SetStateAction<AttendanceLog[]>>
+  activeLog: AttendanceLog | null
+  isSyncing: boolean
+  onClockAction: () => void
   internId: string
-  firstName: string
-  program: string
 }
 
 const emptyState: ActionResult = { success: false }
@@ -281,37 +282,18 @@ function AttendanceForm({
   )
 }
 
-export function AttendanceLogsClient({ initialLogs, internId, firstName, program }: Props) {
-  const [logs, setLogs] = useState<AttendanceLog[]>(initialLogs)
+export function AttendanceLogsClient({
+  logs,
+  setLogs,
+  activeLog,
+  isSyncing,
+  onClockAction,
+  internId,
+}: Props) {
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [selectedLog, setSelectedLog] = useState<AttendanceLog | null>(null)
   const [isPending, startTransition] = useTransition()
-
-  const [isSyncing, startSyncTransition] = useTransition()
-  const activeLog = logs.find((l) => l.time_out === null) ?? null
-
-  function handleClockAction() {
-    startSyncTransition(async () => {
-      if (activeLog) {
-        const res = await clockOutAction(activeLog.id)
-        if (res.success && res.data) {
-          setLogs((prev) => prev.map((l) => (l.id === res.data!.id ? res.data! : l)))
-          toast.success('Successfully clocked out!')
-        } else {
-          toast.error(res.error || 'Failed to clock out.')
-        }
-      } else {
-        const res = await clockInAction()
-        if (res.success && res.data) {
-          setLogs((prev) => [res.data!, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
-          toast.success('Successfully clocked in!')
-        } else {
-          toast.error(res.error || 'Failed to clock in.')
-        }
-      }
-    })
-  }
 
   function handleCreated(log: AttendanceLog) {
     setLogs((prev) => [log, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
@@ -342,15 +324,6 @@ export function AttendanceLogsClient({ initialLogs, internId, firstName, program
 
   return (
     <div className="space-y-6">
-      {/* Welcome Greeting Card — rendered here so it shares the same logs state for instant clock updates */}
-      <WelcomeCard
-        firstName={firstName}
-        program={program}
-        activeLog={activeLog}
-        isSyncing={isSyncing}
-        onClockAction={handleClockAction}
-      />
-
       {/* Header and Toggle */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-stone-250/20 dark:border-white/5 pb-4">
         <div>
@@ -368,7 +341,7 @@ export function AttendanceLogsClient({ initialLogs, internId, firstName, program
 
           <button
             disabled={isSyncing}
-            onClick={handleClockAction}
+            onClick={onClockAction}
             className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
               activeLog
                 ? 'bg-gradient-to-r from-amber-500 to-orange-600 shadow-orange-500/25'
