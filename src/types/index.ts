@@ -1,4 +1,5 @@
 export type UserRole = 'student' | 'admin'
+export type AcademicTerm = 'First Semester' | 'Second Semester' | 'Midyear'
 
 export interface Student {
   id: string
@@ -13,6 +14,9 @@ export interface Student {
   github_link: string | null
   project_github_link: string | null
   role: UserRole
+  is_approved: boolean
+  academic_term: AcademicTerm | null
+  academic_year: string | null
   created_at: string
   updated_at: string
 }
@@ -53,6 +57,9 @@ export interface StudentProgress {
   project_github_link?: string | null
   github_link?: string | null
   role: 'student' | 'admin'
+  is_approved: boolean
+  academic_term: AcademicTerm | null
+  academic_year: string | null
   total_rendered_hours: number
   remaining_hours: number
   estimated_completion_date: string | null

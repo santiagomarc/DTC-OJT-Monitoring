@@ -51,6 +51,7 @@ export async function getAllStudentProgress(): Promise<StudentProgress[]> {
     .from('student_progress')
     .select('*')
     .eq('role', 'student')
+    .eq('is_approved', true)
     .order('last_name', { ascending: true })
 
   const students = (data as StudentProgress[]) ?? []

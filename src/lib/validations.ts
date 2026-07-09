@@ -21,6 +21,8 @@ export const signupSchema = z.object({
     .number()
     .min(1, 'Must be at least 1 hour')
     .max(2000),
+  academic_term: z.enum(['First Semester', 'Second Semester', 'Midyear']),
+  academic_year: z.string().regex(/^\d{4}-\d{4}$/, 'Use format YYYY-YYYY (e.g. 2025-2026)'),
 })
 
 export const attendanceLogSchema = z

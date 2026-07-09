@@ -5,7 +5,7 @@ export async function updateSession(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Public routes & explicit public API routes — resolve instantly with 0ms overhead
-  const publicPaths = ['/login', '/signup', '/']
+  const publicPaths = ['/login', '/signup', '/', '/pending-approval']
   const publicApiPaths = ['/api/cron', '/api/webhooks/sheets']
   if (publicPaths.includes(pathname) || publicApiPaths.includes(pathname)) {
     return NextResponse.next({ request })
@@ -63,22 +63,36 @@ export async function updateSession(request: NextRequest) {
   requestHeaders.set('x-user-id', user.id)
   requestHeaders.set('x-user-email', user.email || '')
 
-  // Admin route protection: check role from database
-  if (pathname.startsWith('/dashboard/admin')) {
+  // ── Approval gate and Role check: consolidated single query ──
+  if (pathname.startsWith('/dashboard')) {
     const { data: profile } = await supabase
       .from('students')
-      .select('role')
+      .select('role, is_approved')
       .eq('auth_user_id', user.id)
       .single()
 
-    if (!profile || profile.role !== 'admin') {
+    // 1. Approval Gate: block unapproved students from entering /dashboard
+    if (profile && !profile.is_approved && profile.role !== 'admin') {
       const url = request.nextUrl.clone()
-      url.pathname = '/dashboard'
+      url.pathname = '/pending-approval'
       const redirectResponse = NextResponse.redirect(url)
       supabaseResponse.cookies.getAll().forEach((cookie) => {
         redirectResponse.cookies.set(cookie.name, cookie.value, cookie)
       })
       return redirectResponse
+    }
+
+    // 2. Admin Route Protection: check role from database for /dashboard/admin
+    if (pathname.startsWith('/dashboard/admin')) {
+      if (!profile || profile.role !== 'admin') {
+        const url = request.nextUrl.clone()
+        url.pathname = '/dashboard'
+        const redirectResponse = NextResponse.redirect(url)
+        supabaseResponse.cookies.getAll().forEach((cookie) => {
+          redirectResponse.cookies.set(cookie.name, cookie.value, cookie)
+        })
+        return redirectResponse
+      }
     }
   }
 

@@ -106,6 +106,54 @@ export function SignupForm() {
         </div>
       </div>
 
+      <div className="grid grid-cols-2 gap-4">
+        <div>
+          <label htmlFor="academic_term" className="label">
+            Academic Term
+          </label>
+          <select
+            id="academic_term"
+            name="academic_term"
+            required
+            className="input"
+          >
+            <option value="">Select term…</option>
+            <option value="First Semester">First Semester</option>
+            <option value="Second Semester">Second Semester</option>
+            <option value="Midyear">Midyear</option>
+          </select>
+        </div>
+        <div>
+          <label htmlFor="academic_year" className="label">
+            Academic Year
+          </label>
+          <select
+            id="academic_year"
+            name="academic_year"
+            required
+            className="input"
+            defaultValue={
+              (() => {
+                const now = new Date()
+                const y = now.getFullYear()
+                return now.getMonth() + 1 >= 6 ? `${y}-${y + 1}` : `${y - 1}-${y}`
+              })()
+            }
+          >
+            <option value="">Select year…</option>
+            {Array.from({ length: 7 }, (_, i) => {
+              const y = new Date().getFullYear() - 2 + i
+              const val = `${y}-${y + 1}`
+              return (
+                <option key={val} value={val}>
+                  {val}
+                </option>
+              )
+            })}
+          </select>
+        </div>
+      </div>
+
       <div>
         <label htmlFor="password" className="label">
           Password

@@ -2,6 +2,8 @@ import { redirect } from 'next/navigation'
 import { getMyProfile } from '@/actions/students'
 import { getAllStudentProgress } from '@/actions/students'
 import { MasterTable } from '@/components/tables/MasterTable'
+import { getPendingInterns } from '@/actions/admin'
+import { PendingApprovalsTable } from '@/components/tables/PendingApprovalsTable'
 
 export const metadata = { title: 'Admin Dashboard — BatSU OJT Monitor' }
 
@@ -9,7 +11,10 @@ export default async function AdminDashboardPage() {
   const profile = await getMyProfile()
   if (!profile || profile.role !== 'admin') redirect('/dashboard')
 
-  const students = await getAllStudentProgress()
+  const [students, pending] = await Promise.all([
+    getAllStudentProgress(),
+    getPendingInterns(),
+  ])
 
   const totalRendered = students.reduce(
     (sum, s) => sum + Number(s.total_rendered_hours),
@@ -61,6 +66,12 @@ export default async function AdminDashboardPage() {
           <p className="text-xs text-stone-400 dark:text-stone-500">completion &gt;7 days out</p>
         </div>
       </div>
+
+      {pending.length > 0 && (
+        <div className="mt-4">
+          <PendingApprovalsTable initialPending={pending} />
+        </div>
+      )}
 
       <MasterTable students={students} sheetUrl={sheetUrl} />
     </div>

@@ -5,6 +5,7 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { getMyProfile } from './students'
 import { syncInternToSheets, deleteInternFromSheets } from '@/lib/sync'
 import { z } from 'zod'
+import type { Student } from '@/types'
 
 const editInternSchema = z.object({
   internId: z.string().uuid(),
@@ -167,6 +168,53 @@ export async function deleteInternAction(internId: string): Promise<{ success?: 
 
   revalidatePath('/dashboard/admin')
   revalidatePath(`/dashboard/admin/${internId}`)
+  return { success: true }
+}
+
+/**
+ * Admin: get all pending (unapproved) students.
+ */
+export async function getPendingInterns(): Promise<Student[]> {
+  const profile = await getMyProfile()
+  if (!profile || profile.role !== 'admin') return []
+
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('students')
+    .select('*')
+    .eq('is_approved', false)
+    .eq('role', 'student')
+    .order('created_at', { ascending: true })
+
+  return (data as Student[]) ?? []
+}
+
+/**
+ * Admin: approve a pending intern registration.
+ * Toggles is_approved = true and triggers Google Sheets sync.
+ */
+export async function approveInternAction(
+  internId: string
+): Promise<{ success?: boolean; error?: string }> {
+  const profile = await getMyProfile()
+  if (!profile || profile.role !== 'admin') {
+    return { error: 'Unauthorized' }
+  }
+
+  const supabase = await createClient()
+  const { error } = await supabase
+    .from('students')
+    .update({ is_approved: true })
+    .eq('id', internId)
+
+  if (error) return { error: error.message }
+
+  // NOW sync to Google Sheets (first-time sync after approval)
+  syncInternToSheets(internId).catch((e) => {
+    console.error('[admin] Sync after approval failed:', e)
+  })
+
+  revalidatePath('/dashboard/admin')
   return { success: true }
 }
 

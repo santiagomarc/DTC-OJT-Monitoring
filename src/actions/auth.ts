@@ -63,6 +63,8 @@ export async function signupAction(
     last_name: formData.get('last_name') as string,
     program: formData.get('program') as string,
     required_ojt_hours: Number(formData.get('required_ojt_hours')),
+    academic_term: formData.get('academic_term') as string,
+    academic_year: formData.get('academic_year') as string,
   }
 
   const parsed = signupSchema.safeParse(raw)
@@ -112,6 +114,9 @@ export async function signupAction(
     email: parsed.data.email,
     program: parsed.data.program,
     required_ojt_hours: parsed.data.required_ojt_hours,
+    academic_term: parsed.data.academic_term,
+    academic_year: parsed.data.academic_year,
+    is_approved: false,
     role: 'student',
   }).select('id').single()
 
@@ -121,15 +126,10 @@ export async function signupAction(
     return { success: false, error: profileError?.message ?? 'Failed to create profile' }
   }
 
-  try {
-    const { syncInternToSheets } = await import('@/lib/sync')
-    await syncInternToSheets(studentData.id)
-  } catch (err) {
-    console.error('Failed to sync new student to sheets:', err)
-  }
+  // NOTE: syncInternToSheets will only run AFTER the admin approves this profile.
 
   revalidatePath('/', 'layout')
-  redirect('/dashboard')
+  redirect('/pending-approval')
 }
 
 export async function logoutAction(): Promise<void> {

@@ -4,12 +4,14 @@ import { GraduationCap, LogOut } from 'lucide-react'
 import { logoutAction } from '@/actions/auth'
 import type { Student } from '@/types'
 import { ThemeToggle } from './ThemeToggle'
+import { ClockButton } from './ClockButton'
 
 interface StudentHeaderProps {
   profile: Student
+  activeSessionId: string | null
 }
 
-export function StudentHeader({ profile }: StudentHeaderProps) {
+export function StudentHeader({ profile, activeSessionId }: StudentHeaderProps) {
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center justify-between border-b border-stone-200 bg-stone-50/80 px-6 backdrop-blur-md dark:border-white/10 dark:bg-stone-950/70">
       {/* Brand */}
@@ -23,6 +25,10 @@ export function StudentHeader({ profile }: StudentHeaderProps) {
 
       {/* Right side: User Info, Theme Toggle, Logout */}
       <div className="flex items-center gap-4">
+        <ClockButton activeSessionId={activeSessionId} />
+
+        <div className="h-8 w-px bg-stone-200 dark:bg-white/10 hidden sm:block" />
+
         <div className="hidden text-right md:block">
           <p className="text-xs font-semibold text-stone-400 uppercase tracking-wider">Intern Account</p>
           <p className="text-sm font-bold text-stone-900 dark:text-white">

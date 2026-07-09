@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import Link from 'next/link'
 import { ArrowUpDown, ExternalLink, Download } from 'lucide-react'
-import type { StudentProgress } from '@/types'
+import type { StudentProgress, AcademicTerm } from '@/types'
 
 interface Props {
   students: StudentProgress[]
@@ -12,6 +12,7 @@ interface Props {
 
 type SortKey = 'name' | 'program' | 'progress' | 'remaining'
 type SortDir = 'asc' | 'desc'
+type TermTab = 'All' | AcademicTerm
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return 'TBD'
@@ -26,6 +27,13 @@ export function MasterTable({ students, sheetUrl }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [search, setSearch] = useState('')
+  const [activeTab, setActiveTab] = useState<TermTab>('All')
+  const [activeYear, setActiveYear] = useState<string>('All')
+
+  // Extract unique academic years dynamically from students list
+  const uniqueYears = Array.from(
+    new Set(students.map((s) => s.academic_year).filter(Boolean))
+  ).sort().reverse() as string[]
 
   function handleSort(key: SortKey) {
     if (sortKey === key) {
@@ -38,13 +46,22 @@ export function MasterTable({ students, sheetUrl }: Props) {
 
   const filtered = students.filter((s) => {
     const q = search.toLowerCase()
-    return (
+    
+    // Search filter
+    const matchesSearch = 
       s.last_name.toLowerCase().includes(q) ||
       s.first_name.toLowerCase().includes(q) ||
       s.program.toLowerCase().includes(q) ||
       (s.sr_code && s.sr_code.toLowerCase().includes(q)) ||
       (s.email && s.email.toLowerCase().includes(q))
-    )
+
+    // Term filter
+    const matchesTerm = activeTab === 'All' || s.academic_term === activeTab
+
+    // Year filter
+    const matchesYear = activeYear === 'All' || s.academic_year === activeYear
+
+    return matchesSearch && matchesTerm && matchesYear
   })
 
   const sorted = [...filtered].sort((a, b) => {
@@ -110,7 +127,52 @@ export function MasterTable({ students, sheetUrl }: Props) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      {/* Category Tabs & Year Selector */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 dark:border-white/10 pb-4">
+        <div className="flex flex-wrap gap-2">
+          {(['All', 'First Semester', 'Second Semester', 'Midyear'] as TermTab[]).map((tab) => {
+            const count = tab === 'All'
+              ? students.length
+              : students.filter((s) => s.academic_term === tab).length
+            return (
+              <button
+                key={tab}
+                onClick={() => {
+                  setActiveTab(tab)
+                }}
+                className={`rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+                  activeTab === tab
+                    ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-md shadow-red-500/15'
+                    : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-900 dark:text-stone-400 dark:hover:bg-stone-850'
+                }`}
+              >
+                {tab}
+                <span className="ml-1.5 opacity-70">({count})</span>
+              </button>
+            )
+          })}
+        </div>
+
+        {uniqueYears.length > 0 && (
+          <div className="flex items-center gap-2">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">Academic Year:</span>
+            <select
+              value={activeYear}
+              onChange={(e) => setActiveYear(e.target.value)}
+              className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs outline-none transition focus:border-red-500 dark:border-white/10 dark:bg-stone-950 dark:text-white"
+            >
+              <option value="All">All Years</option>
+              {uniqueYears.map((y) => (
+                <option key={y} value={y}>
+                  {y}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
+
       {/* Actions Bar */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <input
@@ -179,9 +241,16 @@ export function MasterTable({ students, sheetUrl }: Props) {
               return (
                 <tr key={s.id} className="transition hover:bg-stone-50 dark:hover:bg-white/5">
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="font-medium text-stone-900 dark:text-white">
-                      {s.last_name}, {s.first_name}
-                    </span>
+                    <div className="flex flex-col">
+                      <span className="font-semibold text-stone-900 dark:text-white">
+                        {s.last_name}, {s.first_name}
+                      </span>
+                      {s.academic_term && (
+                        <span className="text-[10px] text-stone-450 dark:text-stone-500 font-bold uppercase tracking-wider mt-0.5">
+                          {s.academic_term} · {s.academic_year || ''}
+                        </span>
+                      )}
+                    </div>
                   </td>
                   <td className="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap">{s.sr_code || '—'}</td>
                   <td className="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap">{s.email || '—'}</td>
