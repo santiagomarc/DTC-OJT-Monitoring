@@ -60,6 +60,16 @@ export default async function StudentDashboardPage() {
 
   return (
     <div className="space-y-8 py-4">
+      {/* Attendance Logs + Welcome Card (combined client boundary for real-time clock sync) */}
+      {/* WelcomeCard is rendered first inside AttendanceLogsClient, so it appears at the top */}
+      <Suspense fallback={<AttendanceLogsSkeleton />}>
+        <AttendanceLogsSection
+          internId={profile.id}
+          firstName={profile.first_name}
+          program={profile.program}
+        />
+      </Suspense>
+
       {/* Projects & Portfolio */}
       <ProjectCard projects={progress?.projects || []} personalGithubLink={profile.github_link} />
 
@@ -72,15 +82,6 @@ export default async function StudentDashboardPage() {
           <span>Progress data is currently unavailable. Please contact the administrator.</span>
         </div>
       )}
-
-      {/* Attendance Logs + Welcome Card (combined client boundary for real-time clock sync) */}
-      <Suspense fallback={<AttendanceLogsSkeleton />}>
-        <AttendanceLogsSection
-          internId={profile.id}
-          firstName={profile.first_name}
-          program={profile.program}
-        />
-      </Suspense>
     </div>
   )
 }
