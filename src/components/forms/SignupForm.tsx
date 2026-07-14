@@ -11,6 +11,25 @@ const PROGRAMS = ['BSIT', 'BSCS', 'BSECE', 'BSCPE', 'BSEE', 'BSME', 'BSA', 'BSBA
 export function SignupForm() {
   const [state, formAction, isPending] = useActionState(signupAction, initialState)
 
+  // Auto-detect current academic term and year based on standard PH State U calendar
+  const now = new Date()
+  const month = now.getMonth() // 0-indexed (0 = Jan, 11 = Dec)
+  const year = now.getFullYear()
+
+  let currentTerm = "First Semester"
+  let currentAcademicYear = `${year}-${year + 1}`
+
+  if (month >= 7 && month <= 11) { // August (7) to December (11)
+    currentTerm = "First Semester"
+    currentAcademicYear = `${year}-${year + 1}`
+  } else if (month >= 0 && month <= 4) { // January (0) to May (4)
+    currentTerm = "Second Semester"
+    currentAcademicYear = `${year - 1}-${year}`
+  } else { // June (5) to July (6)
+    currentTerm = "Midyear"
+    currentAcademicYear = `${year - 1}-${year}`
+  }
+
   return (
     <form action={formAction} className="space-y-4">
       <div className="grid grid-cols-2 gap-4">
@@ -108,49 +127,18 @@ export function SignupForm() {
 
       <div className="grid grid-cols-2 gap-4">
         <div>
-          <label htmlFor="academic_term" className="label">
-            Academic Term
-          </label>
-          <select
-            id="academic_term"
-            name="academic_term"
-            required
-            className="input"
-          >
-            <option value="">Select term…</option>
-            <option value="First Semester">First Semester</option>
-            <option value="Second Semester">Second Semester</option>
-            <option value="Midyear">Midyear</option>
-          </select>
+          <label className="label">Academic Term</label>
+          <input type="hidden" name="academic_term" value={currentTerm} />
+          <div className="input bg-stone-100 dark:bg-stone-800 text-stone-500 flex items-center cursor-not-allowed">
+            {currentTerm}
+          </div>
         </div>
         <div>
-          <label htmlFor="academic_year" className="label">
-            Academic Year
-          </label>
-          <select
-            id="academic_year"
-            name="academic_year"
-            required
-            className="input"
-            defaultValue={
-              (() => {
-                const now = new Date()
-                const y = now.getFullYear()
-                return now.getMonth() + 1 >= 6 ? `${y}-${y + 1}` : `${y - 1}-${y}`
-              })()
-            }
-          >
-            <option value="">Select year…</option>
-            {Array.from({ length: 7 }, (_, i) => {
-              const y = new Date().getFullYear() - 2 + i
-              const val = `${y}-${y + 1}`
-              return (
-                <option key={val} value={val}>
-                  {val}
-                </option>
-              )
-            })}
-          </select>
+          <label className="label">Academic Year</label>
+          <input type="hidden" name="academic_year" value={currentAcademicYear} />
+          <div className="input bg-stone-100 dark:bg-stone-800 text-stone-500 flex items-center cursor-not-allowed">
+            {currentAcademicYear}
+          </div>
         </div>
       </div>
 
