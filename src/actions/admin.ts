@@ -218,3 +218,44 @@ export async function approveInternAction(
   return { success: true }
 }
 
+const bulkApproveSchema = z.object({
+  internIds: z.array(z.string().uuid()).min(1, 'Select at least one intern'),
+})
+
+/**
+ * Admin: approve multiple pending intern registrations in one batch.
+ * Uses a single Supabase `.in('id', ...)` query for efficiency.
+ */
+export async function bulkApproveInternsAction(
+  internIds: string[]
+): Promise<{ success?: boolean; error?: string; count?: number }> {
+  const profile = await getMyProfile()
+  if (!profile || profile.role !== 'admin') {
+    return { error: 'Unauthorized' }
+  }
+
+  const result = bulkApproveSchema.safeParse({ internIds })
+  if (!result.success) {
+    return { error: result.error.issues[0].message }
+  }
+
+  const supabase = await createClient()
+  const { error, count } = await supabase
+    .from('students')
+    .update({ is_approved: true })
+    .in('id', result.data.internIds)
+    .eq('is_approved', false)
+
+  if (error) return { error: error.message }
+
+  // Sync each approved intern to Google Sheets (non-blocking)
+  for (const id of result.data.internIds) {
+    syncInternToSheets(id).catch((e) => {
+      console.error(`[admin] Sync after bulk approval failed for ${id}:`, e)
+    })
+  }
+
+  revalidatePath('/dashboard/admin')
+  return { success: true, count: count ?? result.data.internIds.length }
+}
+

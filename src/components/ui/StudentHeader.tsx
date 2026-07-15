@@ -5,7 +5,6 @@ import { LogOut } from 'lucide-react'
 import { logoutAction } from '@/actions/auth'
 import type { Student } from '@/types'
 import { ThemeToggle } from './ThemeToggle'
-import { ClockButton } from './ClockButton'
 
 interface StudentHeaderProps {
   profile: Student
@@ -15,7 +14,7 @@ export function StudentHeader({ profile }: StudentHeaderProps) {
   return (
     <header className="sticky top-0 z-30 w-full border-b border-stone-200 bg-stone-50/80 px-3 py-3 backdrop-blur-md dark:border-white/10 dark:bg-stone-950/70 sm:px-6 lg:flex lg:min-h-16 lg:items-center lg:justify-between lg:py-2">
       {/* Brand */}
-      <div className="flex items-center justify-between gap-3 lg:contents">
+      <div className="flex items-center justify-between gap-3">
         <div className="flex min-w-0 items-center gap-2.5 sm:gap-3">
           <Image src="/dtc-logo.png" alt="DTC Logo" width={160} height={40} priority className="h-10 w-auto shrink-0 object-contain" />
           <div className="min-w-0">
@@ -24,7 +23,7 @@ export function StudentHeader({ profile }: StudentHeaderProps) {
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3 lg:order-3">
+        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <div className="hidden text-right xl:block">
             <p className="text-xs font-semibold uppercase tracking-wider text-stone-400">Intern Account</p>
             <p className="text-sm font-bold text-stone-900 dark:text-white">{profile.first_name} {profile.last_name}</p>
@@ -42,7 +41,6 @@ export function StudentHeader({ profile }: StudentHeaderProps) {
           </form>
         </div>
       </div>
-      <div className="mt-3 lg:order-2 lg:mt-0"><ClockButton /></div>
     </header>
   )
 }
