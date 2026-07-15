@@ -1,14 +1,13 @@
 'use client'
 
-import { useState, useTransition } from 'react'
-import { toast } from 'sonner'
+import { useState } from 'react'
 import type { Student, AttendanceLog, StudentProgress } from '@/types'
-import { clockInAction, clockOutAction } from '@/actions/attendance'
 import { WelcomeCard } from '@/components/ui/WelcomeCard'
 import { ProjectCard } from '@/components/ui/ProjectCard'
 import { ProgressCard } from '@/components/ui/ProgressCard'
 import { AttendanceLogsClient } from '@/components/tables/AttendanceLogsClient'
 import { ShieldAlert } from 'lucide-react'
+import { useAttendanceSession } from '@/components/attendance/AttendanceSessionProvider'
 
 interface DashboardClientProps {
   profile: Student
@@ -18,31 +17,8 @@ interface DashboardClientProps {
 
 export function DashboardClient({ profile, progress, initialLogs }: DashboardClientProps) {
   const [logs, setLogs] = useState<AttendanceLog[]>(initialLogs)
-  const [isSyncing, startSyncTransition] = useTransition()
-  
-  const activeLog = logs.find((l) => l.time_out === null) ?? null
-
-  function handleClockAction() {
-    startSyncTransition(async () => {
-      if (activeLog) {
-        const res = await clockOutAction(activeLog.id)
-        if (res.success && res.data) {
-          setLogs((prev) => prev.map((l) => (l.id === res.data!.id ? res.data! : l)))
-          toast.success('Successfully clocked out!')
-        } else {
-          toast.error(res.error || 'Failed to clock out.')
-        }
-      } else {
-        const res = await clockInAction()
-        if (res.success && res.data) {
-          setLogs((prev) => [res.data!, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
-          toast.success('Successfully clocked in!')
-        } else {
-          toast.error(res.error || 'Failed to clock in.')
-        }
-      }
-    })
-  }
+  const { activeLog, isClockPending, reconcileLog, removeLog } = useAttendanceSession()
+  const visibleLogs = activeLog && !logs.some((log) => log.id === activeLog.id) ? [activeLog, ...logs] : logs
 
   return (
     <div className="space-y-8 py-4">
@@ -51,8 +27,6 @@ export function DashboardClient({ profile, progress, initialLogs }: DashboardCli
         firstName={profile.first_name}
         program={profile.program}
         activeLog={activeLog}
-        isSyncing={isSyncing}
-        onClockAction={handleClockAction}
       />
 
       {/* 2. Projects & Portfolio */}
@@ -70,11 +44,12 @@ export function DashboardClient({ profile, progress, initialLogs }: DashboardCli
 
       {/* 4. Attendance Logs Section (At the bottom) */}
       <AttendanceLogsClient
-        logs={logs}
+        logs={visibleLogs}
         setLogs={setLogs}
         activeLog={activeLog}
-        isSyncing={isSyncing}
-        onClockAction={handleClockAction}
+        isClockPending={isClockPending}
+        reconcileLog={reconcileLog}
+        removeLog={removeLog}
         internId={profile.id}
       />
     </div>

@@ -19,7 +19,7 @@ async function getInternId(): Promise<string | null> {
  * CREATE — Add a new attendance log entry.
  */
 export async function createAttendanceLog(
-  _: ActionResult,
+  _: ActionResult<AttendanceLog>,
   formData: FormData
 ): Promise<ActionResult<AttendanceLog>> {
   const internId = await getInternId()
@@ -87,7 +87,7 @@ export async function createAttendanceLog(
  */
 export async function updateAttendanceLog(
   logId: string,
-  _: ActionResult,
+  _: ActionResult<AttendanceLog>,
   formData: FormData
 ): Promise<ActionResult<AttendanceLog>> {
   const internId = await getInternId()
@@ -115,7 +115,14 @@ export async function updateAttendanceLog(
 
   const supabase = await createClient()
 
-  const updatePayload: any = {
+  const updatePayload: {
+    date: string
+    time_in: string
+    time_out: string | null
+    planned_task: string | null
+    actual_accomplishment: string | null
+    photo_url?: string | null
+  } = {
     date: parsed.data.date,
     time_in: parsed.data.time_in + ':00',
     time_out: parsed.data.time_out
@@ -198,6 +205,24 @@ export async function getMyAttendanceLogs(): Promise<AttendanceLog[]> {
   return (data as AttendanceLog[]) ?? []
 }
 
+/** Read the sole active session used by the global header clock. */
+export async function getMyActiveAttendanceLog(): Promise<AttendanceLog | null> {
+  const internId = await getInternId()
+  if (!internId) return null
+
+  const supabase = await createClient()
+  const { data } = await supabase
+    .from('attendance_logs')
+    .select('*')
+    .eq('student_id', internId)
+    .is('time_out', null)
+    .order('date', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  return (data as AttendanceLog | null) ?? null
+}
+
 /**
  * QUICK ACTION — Clock in for today.
  */
@@ -206,6 +231,17 @@ export async function clockInAction(): Promise<ActionResult<AttendanceLog>> {
   if (!internId) return { success: false, error: 'Not authenticated' }
 
   const supabase = await createClient()
+
+  const { data: activeSession, error: activeSessionError } = await supabase
+    .from('attendance_logs')
+    .select('id')
+    .eq('student_id', internId)
+    .is('time_out', null)
+    .limit(1)
+    .maybeSingle()
+
+  if (activeSessionError) return { success: false, error: activeSessionError.message }
+  if (activeSession) return { success: false, error: 'You already have an active attendance session.' }
 
   const now = new Date()
   const phDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(now) // YYYY-MM-DD
@@ -224,6 +260,9 @@ export async function clockInAction(): Promise<ActionResult<AttendanceLog>> {
     .select()
 
   if (error) {
+    if (error.code === '23505') {
+      return { success: false, error: 'You already have an active attendance session.' }
+    }
     if (error.code === '23505') {
       return { success: false, error: 'You already have an attendance log for today.' }
     }
@@ -260,10 +299,10 @@ export async function clockOutAction(logId: string): Promise<ActionResult<Attend
     .from('attendance_logs')
     .update({
       time_out: phTime + ':00',
-      actual_accomplishment: 'Completed today\'s session.',
     })
     .eq('id', logId)
     .eq('student_id', internId)
+    .is('time_out', null)
     .select()
 
   if (error) return { success: false, error: error.message }

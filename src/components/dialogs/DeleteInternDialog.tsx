@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { X, Trash2 } from 'lucide-react'
 import { deleteInternAction } from '@/actions/admin'
@@ -15,6 +15,7 @@ export function DeleteInternDialog({ internId, lastName }: Props) {
   const [isOpen, setIsOpen] = useState(false)
   const [confirmText, setConfirmText] = useState('')
   const [isPending, startTransition] = useTransition()
+  const deleteLockRef = useRef(false)
   const router = useRouter()
 
   const normalizedTarget = lastName.trim().toUpperCase()
@@ -22,16 +23,21 @@ export function DeleteInternDialog({ internId, lastName }: Props) {
   const isMatch = normalizedInput === normalizedTarget
 
   async function onDelete() {
-    if (!isMatch) return
+    if (!isMatch || deleteLockRef.current) return
+    deleteLockRef.current = true
 
     startTransition(async () => {
-      const res = await deleteInternAction(internId)
-      if (res?.error) {
-        toast.error(res.error)
-      } else {
-        toast.success(`Intern ${lastName} successfully deleted`)
-        setIsOpen(false)
-        router.push('/dashboard/admin')
+      try {
+        const res = await deleteInternAction(internId)
+        if (res?.error) {
+          toast.error(res.error)
+        } else {
+          toast.success(`Intern ${lastName} successfully deleted`)
+          setIsOpen(false)
+          router.push('/dashboard/admin')
+        }
+      } finally {
+        deleteLockRef.current = false
       }
     })
   }
@@ -72,7 +78,7 @@ export function DeleteInternDialog({ internId, lastName }: Props) {
 
               <div>
                 <label className="label">
-                  To confirm, type the student's last name <span className="font-bold">"{lastName.toUpperCase()}"</span> below:
+                  To confirm, type the student&apos;s last name <span className="font-bold">&quot;{lastName.toUpperCase()}&quot;</span> below:
                 </label>
                 <input
                   type="text"

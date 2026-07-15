@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { SignupForm } from '@/components/forms/SignupForm'
 
 export const metadata = {
@@ -16,7 +17,7 @@ export default function SignupPage() {
 
       <div className="relative z-10 w-full max-w-lg">
         <div className="mb-8 text-center">
-          <img src="/dtc-logo.png" alt="DTC Logo" className="mx-auto mb-2 w-72 h-auto object-contain relative z-10" />
+          <Image src="/dtc-logo.png" alt="DTC Logo" width={288} height={72} priority className="relative z-10 mx-auto mb-2 h-auto w-72 object-contain" />
           <h1 className="text-3xl font-black tracking-tight text-stone-900 dark:text-white">
             Create Your Account
           </h1>

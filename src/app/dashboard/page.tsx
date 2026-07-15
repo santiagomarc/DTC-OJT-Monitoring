@@ -20,6 +20,7 @@ export default async function StudentDashboardPage() {
 
   return (
     <DashboardClient
+      key={logs.map((log) => `${log.id}:${log.updated_at}`).join('|')}
       profile={profile}
       progress={progress}
       initialLogs={logs}

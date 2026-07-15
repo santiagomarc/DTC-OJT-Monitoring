@@ -2,6 +2,7 @@ import { cache } from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { headers } from 'next/headers'
 import type { Student } from '@/types'
+import type { User } from '@supabase/supabase-js'
 
 /**
  * Retrieve and cache the authenticated user.
@@ -17,9 +18,9 @@ export const getCachedUser = cache(async () => {
       return {
         id: userId,
         email: userEmail,
-      } as any
+      } as Pick<User, 'id' | 'email'>
     }
-  } catch (e) {
+  } catch {
     // headers() might throw in static rendering or pre-render contexts, safe to ignore and fall back
   }
 

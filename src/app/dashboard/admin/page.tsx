@@ -4,6 +4,7 @@ import { getAllStudentProgress } from '@/actions/students'
 import { MasterTable } from '@/components/tables/MasterTable'
 import { getPendingInterns } from '@/actions/admin'
 import { PendingApprovalsTable } from '@/components/tables/PendingApprovalsTable'
+import { getAtRiskStudentIds } from '@/lib/attendance-status'
 
 export const metadata = { title: 'Admin Dashboard — BatSU OJT Monitor' }
 
@@ -16,10 +17,6 @@ export default async function AdminDashboardPage() {
     getPendingInterns(),
   ])
 
-  const totalRendered = students.reduce(
-    (sum, s) => sum + Number(s.total_rendered_hours),
-    0
-  )
   const avgProgress =
     students.length > 0
       ? students.reduce(
@@ -29,12 +26,7 @@ export default async function AdminDashboardPage() {
         ) / students.length
       : 0
 
-  const behindCount = students.filter(
-    (s) =>
-      s.remaining_hours > 0 &&
-      s.estimated_completion_date &&
-      new Date(s.estimated_completion_date) > new Date(Date.now() + 7 * 24 * 3600 * 1000)
-  ).length
+  const atRiskIds = getAtRiskStudentIds(students)
 
   const spreadsheetId = process.env.GOOGLE_SHEETS_SPREADSHEET_ID
   const sheetUrl = spreadsheetId ? `https://docs.google.com/spreadsheets/d/${spreadsheetId}` : undefined
@@ -62,8 +54,8 @@ export default async function AdminDashboardPage() {
         </div>
         <div className="card">
           <p className="text-sm text-stone-500 dark:text-stone-400">Needs Attention</p>
-          <p className="mt-1 text-3xl font-bold text-amber-600 dark:text-amber-400">{behindCount}</p>
-          <p className="text-xs text-stone-400 dark:text-stone-500">completion &gt;7 days out</p>
+          <p className="mt-1 text-3xl font-bold text-amber-600 dark:text-amber-400">{atRiskIds.length}</p>
+          <p className="text-xs text-stone-400 dark:text-stone-500">no attendance in 7+ days</p>
         </div>
       </div>
 
@@ -73,7 +65,7 @@ export default async function AdminDashboardPage() {
         </div>
       )}
 
-      <MasterTable students={students} sheetUrl={sheetUrl} />
+      <MasterTable students={students} atRiskIds={atRiskIds} sheetUrl={sheetUrl} />
     </div>
   )
 }

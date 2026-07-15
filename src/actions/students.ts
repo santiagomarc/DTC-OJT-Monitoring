@@ -113,9 +113,8 @@ export async function updateStudentProfileAction(
     return { error: 'Unauthorized' }
   }
 
-  const rawData: any = {}
-  if (formData.has('github_link')) {
-    rawData.github_link = (formData.get('github_link') as string) || ''
+  const rawData = {
+    github_link: formData.has('github_link') ? (formData.get('github_link') as string) || '' : undefined,
   }
 
   const result = updateProfileSchema.safeParse(rawData)
@@ -123,7 +122,7 @@ export async function updateStudentProfileAction(
     return { error: result.error.issues[0].message }
   }
 
-  const updatePayload: any = {}
+  const updatePayload: { github_link?: string | null } = {}
   if ('github_link' in result.data) {
     updatePayload.github_link = result.data.github_link || null
   }

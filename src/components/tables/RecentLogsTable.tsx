@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import type { AttendanceLog } from '@/types'
-import { Calendar, Clock, Eye, X } from 'lucide-react'
+import { Calendar, Eye, X } from 'lucide-react'
 import Image from 'next/image'
 
 interface Props {

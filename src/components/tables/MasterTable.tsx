@@ -1,18 +1,20 @@
 'use client'
 
-import { useState } from 'react'
+import { useDeferredValue, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { ArrowUpDown, ExternalLink, Download } from 'lucide-react'
 import type { StudentProgress, AcademicTerm } from '@/types'
 
 interface Props {
   students: StudentProgress[]
+  atRiskIds: string[]
   sheetUrl?: string
 }
 
 type SortKey = 'name' | 'program' | 'progress' | 'remaining'
 type SortDir = 'asc' | 'desc'
 type TermTab = 'All' | AcademicTerm
+type StatusFilter = 'all' | 'attention'
 
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return 'TBD'
@@ -23,12 +25,15 @@ function formatDate(dateStr: string | null): string {
   })
 }
 
-export function MasterTable({ students, sheetUrl }: Props) {
+export function MasterTable({ students, atRiskIds, sheetUrl }: Props) {
   const [sortKey, setSortKey] = useState<SortKey>('name')
   const [sortDir, setSortDir] = useState<SortDir>('asc')
   const [search, setSearch] = useState('')
   const [activeTab, setActiveTab] = useState<TermTab>('All')
   const [activeYear, setActiveYear] = useState<string>('All')
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('all')
+  const deferredSearch = useDeferredValue(search)
+  const atRiskIdSet = useMemo(() => new Set(atRiskIds), [atRiskIds])
 
   // Extract unique academic years dynamically from students list
   const uniqueYears = Array.from(
@@ -44,8 +49,21 @@ export function MasterTable({ students, sheetUrl }: Props) {
     }
   }
 
-  const filtered = students.filter((s) => {
-    const q = search.toLowerCase()
+  const yearScopedStudents = useMemo(
+    () => students.filter((student) => activeYear === 'All' || student.academic_year === activeYear),
+    [activeYear, students]
+  )
+
+  const termCounts = useMemo(() => new Map<TermTab, number>([
+    ['All', yearScopedStudents.length],
+    ['First Semester', yearScopedStudents.filter((student) => student.academic_term === 'First Semester').length],
+    ['Second Semester', yearScopedStudents.filter((student) => student.academic_term === 'Second Semester').length],
+    ['Midyear', yearScopedStudents.filter((student) => student.academic_term === 'Midyear').length],
+  ]), [yearScopedStudents])
+
+  const sorted = useMemo(() => {
+    const filtered = yearScopedStudents.filter((s) => {
+      const q = deferredSearch.toLowerCase()
     
     // Search filter
     const matchesSearch = 
@@ -59,12 +77,12 @@ export function MasterTable({ students, sheetUrl }: Props) {
     const matchesTerm = activeTab === 'All' || s.academic_term === activeTab
 
     // Year filter
-    const matchesYear = activeYear === 'All' || s.academic_year === activeYear
+      const matchesStatus = statusFilter === 'all' || atRiskIdSet.has(s.id)
 
-    return matchesSearch && matchesTerm && matchesYear
-  })
+      return matchesSearch && matchesTerm && matchesStatus
+    })
 
-  const sorted = [...filtered].sort((a, b) => {
+    return [...filtered].sort((a, b) => {
     let cmp = 0
     if (sortKey === 'name') {
       cmp = `${a.last_name} ${a.first_name}`.localeCompare(`${b.last_name} ${b.first_name}`)
@@ -77,8 +95,16 @@ export function MasterTable({ students, sheetUrl }: Props) {
     } else if (sortKey === 'remaining') {
       cmp = Number(a.remaining_hours) - Number(b.remaining_hours)
     }
-    return sortDir === 'asc' ? cmp : -cmp
-  })
+      return sortDir === 'asc' ? cmp : -cmp
+    })
+  }, [activeTab, atRiskIdSet, deferredSearch, sortDir, sortKey, statusFilter, yearScopedStudents])
+
+  function resetFilters() {
+    setSearch('')
+    setActiveTab('All')
+    setActiveYear('All')
+    setStatusFilter('all')
+  }
 
   function exportToCSV() {
     const headers = [
@@ -129,19 +155,17 @@ export function MasterTable({ students, sheetUrl }: Props) {
   return (
     <div className="space-y-6">
       {/* Category Tabs & Year Selector */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-stone-200 dark:border-white/10 pb-4">
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-3 border-b border-stone-200 pb-4 dark:border-white/10 sm:gap-4">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
           {(['All', 'First Semester', 'Second Semester', 'Midyear'] as TermTab[]).map((tab) => {
-            const count = tab === 'All'
-              ? students.length
-              : students.filter((s) => s.academic_term === tab).length
+            const count = termCounts.get(tab) ?? 0
             return (
               <button
                 key={tab}
                 onClick={() => {
                   setActiveTab(tab)
                 }}
-                className={`rounded-xl px-4 py-2 text-xs font-bold transition-all cursor-pointer ${
+                className={`min-w-0 rounded-xl px-3 py-2 text-xs font-bold transition-all sm:px-4 ${
                   activeTab === tab
                     ? 'bg-gradient-to-r from-red-600 to-orange-600 text-white shadow-md shadow-red-500/15'
                     : 'bg-stone-100 text-stone-600 hover:bg-stone-200 dark:bg-stone-900 dark:text-stone-400 dark:hover:bg-stone-850'
@@ -154,13 +178,15 @@ export function MasterTable({ students, sheetUrl }: Props) {
           })}
         </div>
 
-        {uniqueYears.length > 0 && (
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">Academic Year:</span>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {uniqueYears.length > 0 && (
+          <label className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-start">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-stone-500 dark:text-stone-400">Academic Year</span>
             <select
               value={activeYear}
               onChange={(e) => setActiveYear(e.target.value)}
-              className="rounded-xl border border-stone-200 bg-stone-50 px-3 py-1.5 text-xs outline-none transition focus:border-red-500 dark:border-white/10 dark:bg-stone-950 dark:text-white"
+              aria-label="Academic year"
+              className="min-w-0 flex-1 rounded-xl border border-stone-200 bg-stone-50 px-3 py-2 text-xs outline-none transition focus:border-red-500 dark:border-white/10 dark:bg-stone-950 dark:text-white sm:flex-none"
             >
               <option value="All">All Years</option>
               {uniqueYears.map((y) => (
@@ -169,8 +195,12 @@ export function MasterTable({ students, sheetUrl }: Props) {
                 </option>
               ))}
             </select>
-          </div>
-        )}
+          </label>
+          )}
+          <button onClick={() => setStatusFilter((current) => current === 'attention' ? 'all' : 'attention')} className={`rounded-xl px-3 py-2 text-xs font-bold transition ${statusFilter === 'attention' ? 'bg-amber-500 text-white' : 'bg-amber-500/10 text-amber-700 hover:bg-amber-500/20 dark:text-amber-300'}`}>
+            Needs attention ({atRiskIds.length})
+          </button>
+        </div>
       </div>
 
       {/* Actions Bar */}
@@ -180,16 +210,16 @@ export function MasterTable({ students, sheetUrl }: Props) {
           placeholder="Search by name or program…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="input max-w-sm"
+          className="input w-full max-w-none sm:max-w-sm"
         />
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
           {sheetUrl && (
             <a
               href={sheetUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300 transition"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5 text-sm font-medium text-emerald-400 transition hover:bg-emerald-500/20 hover:text-emerald-300 sm:w-auto"
             >
               <ExternalLink className="h-4 w-4" />
               Open Google Sheet
@@ -197,7 +227,7 @@ export function MasterTable({ students, sheetUrl }: Props) {
           )}
           <button
             onClick={exportToCSV}
-            className="inline-flex items-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-500/20 hover:text-red-300 transition cursor-pointer"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-medium text-red-400 transition hover:bg-red-500/20 hover:text-red-300 sm:w-auto"
           >
             <Download className="h-4 w-4" />
             Export to CSV
@@ -206,8 +236,8 @@ export function MasterTable({ students, sheetUrl }: Props) {
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto rounded-xl border border-stone-200 dark:border-white/10">
-        <table className="w-full text-sm">
+      <div className="overflow-x-auto rounded-xl border border-stone-200 dark:border-white/10" tabIndex={0} aria-label="Scrollable intern records table">
+        <table className="min-w-[960px] w-full text-sm">
           <thead>
             <tr className="border-b border-stone-200 bg-stone-50 dark:border-white/10 dark:bg-white/5">
               <SortHeader label="Name" sortKey="name" current={sortKey} dir={sortDir} onSort={handleSort} />
@@ -226,7 +256,10 @@ export function MasterTable({ students, sheetUrl }: Props) {
             {sorted.length === 0 ? (
               <tr>
                 <td colSpan={10} className="px-4 py-10 text-center text-stone-500 dark:text-stone-400">
-                  No interns found.
+                  <div className="space-y-2">
+                    <p>No interns match these filters.</p>
+                    <button onClick={resetFilters} className="font-bold text-red-600 underline dark:text-red-400">Reset filters</button>
+                  </div>
                 </td>
               </tr>
             ) : sorted.map((s) => {
@@ -237,6 +270,7 @@ export function MasterTable({ students, sheetUrl }: Props) {
                 )
               )
               const isComplete = s.remaining_hours <= 0
+              const isAtRisk = atRiskIdSet.has(s.id)
 
               return (
                 <tr key={s.id} className="transition hover:bg-stone-50 dark:hover:bg-white/5">
@@ -250,6 +284,7 @@ export function MasterTable({ students, sheetUrl }: Props) {
                           {s.academic_term} · {s.academic_year || ''}
                         </span>
                       )}
+                      {isAtRisk && <span className="mt-1 w-fit rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 dark:text-amber-300">Needs attention</span>}
                     </div>
                   </td>
                   <td className="px-4 py-3 text-stone-600 dark:text-stone-400 whitespace-nowrap">{s.sr_code || '—'}</td>

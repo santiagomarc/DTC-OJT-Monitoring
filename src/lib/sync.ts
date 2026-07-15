@@ -183,7 +183,7 @@ export async function syncInternToSheets(internId: string): Promise<void> {
     }
 
     // ── 2.5 Fetch projects ────────────────────────────────────
-    const { data: projects, error: projectsError } = await supabase
+    const { data: projects } = await supabase
       .from('student_projects')
       .select('name, github_link')
       .eq('student_id', internId)
@@ -227,7 +227,7 @@ export async function syncInternToSheets(internId: string): Promise<void> {
       currentRows.push(['LAST NAME'])
     }
 
-    let rowIndex = await findMasterRow(sheets, internId, progress.last_name, progress.first_name)
+    const rowIndex = await findMasterRow(sheets, internId, progress.last_name, progress.first_name)
     let targetRow = rowIndex
     let existingActualCompletion = ''
     const remainingHoursText = `${progress.remaining_hours} hours`
@@ -456,10 +456,8 @@ export async function deleteInternFromSheets(
 
   try {
     const meta = await sheets.spreadsheets.get({ spreadsheetId })
-    const sheetTitles = meta.data.sheets?.map((s) => s.properties?.title || '') || []
 
     // ── 1. Delete individual sheet tab if exists ──────────────
-    const tabName = toSheetTabName(lastName, firstName)
     const normalizedTarget = `${lastName}, ${firstName}`.toUpperCase().replace(/[^A-Z0-9]/g, '')
     let matchedTitle: string | null = null
     let matchedSheetId: number | null = null
@@ -528,16 +526,6 @@ export async function deleteInternFromSheets(
       const rowLastName = (row[0] || '').trim()
       const rowFirstName = (row[1] || '').trim()
 
-      // Rederive tab name for this row
-      const normalizedRowTarget = `${rowLastName}, ${rowFirstName}`.toUpperCase().replace(/[^A-Z0-9]/g, '')
-      let rowTabName = toSheetTabName(rowLastName, rowFirstName)
-      for (const title of sheetTitles) {
-        if (title !== matchedTitle && title.toUpperCase().replace(/[^A-Z0-9]/g, '').startsWith(normalizedRowTarget)) {
-          rowTabName = title
-          break
-        }
-      }
-
       const srCode = row[2] || ''
       const email = row[3] || ''
       const program = row[4] || ''
@@ -589,4 +577,3 @@ export async function deleteInternFromSheets(
     console.error(`[sync] ❌ Error deleting student ${lastName}, ${firstName} from sheets:`, error)
   }
 }
-

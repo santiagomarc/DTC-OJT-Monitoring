@@ -3,6 +3,8 @@ import { getCachedUser } from '@/lib/cache'
 import { getMyProfile } from '@/actions/students'
 import { StudentHeader } from '@/components/ui/StudentHeader'
 import { AdminHeader } from '@/components/ui/AdminHeader'
+import { AttendanceSessionProvider } from '@/components/attendance/AttendanceSessionProvider'
+import { getMyActiveAttendanceLog } from '@/actions/attendance'
 
 
 export default async function DashboardLayout({
@@ -31,15 +33,16 @@ export default async function DashboardLayout({
     )
   }
 
-  return (
-    <div className="flex min-h-screen flex-col bg-stone-50 dark:bg-stone-950">
-      <StudentHeader profile={profile} />
-      <main className="flex-1 overflow-auto p-6 lg:p-8">
-        <div className="mx-auto max-w-5xl">
-          {children}
-        </div>
-      </main>
+  const activeLog = await getMyActiveAttendanceLog()
 
-    </div>
+  return (
+    <AttendanceSessionProvider initialActiveLog={activeLog}>
+      <div className="flex min-h-screen flex-col bg-stone-50 dark:bg-stone-950">
+        <StudentHeader profile={profile} />
+        <main className="flex-1 overflow-auto p-4 sm:p-6 lg:p-8">
+          <div className="mx-auto max-w-5xl">{children}</div>
+        </main>
+      </div>
+    </AttendanceSessionProvider>
   )
 }

@@ -1,9 +1,9 @@
 'use client'
 
-import { useState, useActionState, useTransition, useEffect, useRef } from 'react'
+import { useState, useActionState, useTransition, useEffect, useRef, useMemo, useSyncExternalStore } from 'react'
 import { toast } from 'sonner'
-import { Plus, Pencil, Trash2, X, Check, Clock, Calendar, BookOpen, ClipboardCheck, Eye, Printer } from 'lucide-react'
-import { createAttendanceLog, updateAttendanceLog, deleteAttendanceLog, clockInAction, clockOutAction } from '@/actions/attendance'
+import { Plus, Pencil, Trash2, X, Check, Clock, Calendar, BookOpen, ClipboardCheck, Eye, Printer, RotateCcw } from 'lucide-react'
+import { createAttendanceLog, updateAttendanceLog, deleteAttendanceLog } from '@/actions/attendance'
 import type { AttendanceLog, ActionResult } from '@/types'
 import { createClient } from '@/lib/supabase/client'
 import Image from 'next/image'
@@ -13,12 +13,34 @@ interface Props {
   logs: AttendanceLog[]
   setLogs: React.Dispatch<React.SetStateAction<AttendanceLog[]>>
   activeLog: AttendanceLog | null
-  isSyncing: boolean
-  onClockAction: () => void
+  isClockPending: boolean
+  reconcileLog: (log: AttendanceLog) => void
+  removeLog: (logId: string) => void
   internId: string
 }
 
-const emptyState: ActionResult = { success: false }
+const emptyState: ActionResult<AttendanceLog> = { success: false }
+type AttendanceFormAction = (previousState: ActionResult<AttendanceLog>, formData: FormData) => Promise<ActionResult<AttendanceLog>>
+type AttendanceDraft = Pick<AttendanceLog, 'date' | 'time_in' | 'time_out' | 'planned_task' | 'actual_accomplishment'>
+const DRAFT_EVENT = 'attendance-draft-change'
+
+function getDraftKey(internId: string, logId?: string) {
+  return `attendance-draft:${internId}:${logId ?? 'new'}`
+}
+
+function readDraft(key: string): string {
+  if (typeof window === 'undefined') return ''
+  return window.localStorage.getItem(key) ?? ''
+}
+
+function subscribeToDraft(onStoreChange: () => void) {
+  window.addEventListener('storage', onStoreChange)
+  window.addEventListener(DRAFT_EVENT, onStoreChange)
+  return () => {
+    window.removeEventListener('storage', onStoreChange)
+    window.removeEventListener(DRAFT_EVENT, onStoreChange)
+  }
+}
 
 function formatTime(timeStr: string | null): string {
   if (!timeStr) return '—'
@@ -51,24 +73,36 @@ function AttendanceForm({
 }) {
   const isEdit = !!logId
   const [isUploading, setIsUploading] = useState(false)
+  const submitLockRef = useRef(false)
+  const draftTimerRef = useRef<number | null>(null)
+  const draftKey = getDraftKey(internId, logId)
+  const draftSnapshot = useSyncExternalStore(subscribeToDraft, () => readDraft(draftKey), () => '')
+  const savedDraft = useMemo<Partial<AttendanceDraft> | null>(() => {
+    if (!draftSnapshot) return null
+    try {
+      return JSON.parse(draftSnapshot) as Partial<AttendanceDraft>
+    } catch {
+      return null
+    }
+  }, [draftSnapshot])
 
-  const boundAction = isEdit
-    ? updateAttendanceLog.bind(null, logId!)
+  const action: AttendanceFormAction = isEdit
+    ? (previousState, formData) => updateAttendanceLog(logId!, previousState, formData)
     : createAttendanceLog
 
   const [state, formAction, isPending] = useActionState(
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    boundAction as any,
+    action,
     emptyState
   )
 
-  const lastProcessedRef = useRef<ActionResult>(emptyState)
+  const lastProcessedRef = useRef<ActionResult<AttendanceLog>>(emptyState)
 
   useEffect(() => {
     if (state === lastProcessedRef.current) return
     if (state.success && state.data) {
       lastProcessedRef.current = state
-      onSuccess(state.data as AttendanceLog)
+      submitLockRef.current = false
+      onSuccess(state.data)
     }
   }, [state, onSuccess])
 
@@ -76,17 +110,21 @@ function AttendanceForm({
     if (state === lastProcessedRef.current) return
     if (state.error) {
       lastProcessedRef.current = state
+      submitLockRef.current = false
       toast.error(state.error)
     }
   }, [state])
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
+    if (submitLockRef.current) return
+    submitLockRef.current = true
     setIsUploading(true)
 
     const form = event.currentTarget
     const formData = new FormData(form)
     const photoFile = formData.get('photo') as File | null
+    let dispatched = false
 
     try {
       let photoUrl = defaultValues?.photo_url || null
@@ -139,12 +177,40 @@ function AttendanceForm({
         finalFormData.append('photo_url', photoUrl)
       }
 
-      (formAction as any)(finalFormData)
-    } catch (err: any) {
-      toast.error(err.message || 'An error occurred during submission.')
+      discardDraft()
+      dispatched = true
+      formAction(finalFormData)
+    } catch (error: unknown) {
+      toast.error(error instanceof Error ? error.message : 'An error occurred during submission.')
     } finally {
       setIsUploading(false)
+      if (!dispatched) submitLockRef.current = false
     }
+  }
+
+  function saveDraft(values: AttendanceDraft) {
+    if (draftTimerRef.current) window.clearTimeout(draftTimerRef.current)
+    draftTimerRef.current = window.setTimeout(() => {
+      window.localStorage.setItem(draftKey, JSON.stringify(values))
+      window.dispatchEvent(new Event(DRAFT_EVENT))
+    }, 350)
+  }
+
+  function captureDraft(event: React.FormEvent<HTMLFormElement>) {
+    const formData = new FormData(event.currentTarget)
+    saveDraft({
+      date: String(formData.get('date') ?? ''),
+      time_in: String(formData.get('time_in') ?? ''),
+      time_out: String(formData.get('time_out') ?? ''),
+      planned_task: String(formData.get('planned_task') ?? ''),
+      actual_accomplishment: String(formData.get('actual_accomplishment') ?? ''),
+    })
+  }
+
+  function discardDraft() {
+    if (draftTimerRef.current) window.clearTimeout(draftTimerRef.current)
+    window.localStorage.removeItem(draftKey)
+    window.dispatchEvent(new Event(DRAFT_EVENT))
   }
 
   const isSaving = isUploading || isPending
@@ -152,6 +218,7 @@ function AttendanceForm({
   return (
     <form
       onSubmit={handleSubmit}
+      onInput={captureDraft}
       className="rounded-2xl border border-red-200/80 bg-red-50/40 p-6 dark:border-red-500/20 dark:bg-red-950/20 backdrop-blur-md shadow-sm space-y-4 transition-all duration-300"
     >
       <div className="flex items-center justify-between border-b border-red-100 dark:border-red-500/10 pb-3">
@@ -161,11 +228,19 @@ function AttendanceForm({
         <button
           type="button"
           onClick={onCancel}
+          disabled={isSaving}
           className="rounded-lg p-1.5 text-stone-400 hover:bg-stone-100 dark:text-stone-500 dark:hover:bg-white/5 transition"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
+
+      {savedDraft && (
+        <div className="flex flex-col gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 p-3 text-xs text-amber-800 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
+          <span>Saved draft restored. Attach the photo again if you had selected one.</span>
+          <button type="button" onClick={discardDraft} disabled={isSaving} className="inline-flex items-center gap-1 font-bold underline disabled:opacity-60"><RotateCcw className="h-3.5 w-3.5" />Discard draft</button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
         <div>
@@ -174,7 +249,7 @@ function AttendanceForm({
             name="date"
             type="date"
             required
-            defaultValue={defaultValues?.date ?? new Date().toISOString().split('T')[0]}
+            defaultValue={savedDraft?.date ?? defaultValues?.date ?? new Date().toISOString().split('T')[0]}
             className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white"
           />
         </div>
@@ -184,7 +259,7 @@ function AttendanceForm({
             name="time_in"
             type="time"
             required
-            defaultValue={defaultValues?.time_in?.slice(0, 5) ?? '08:00'}
+            defaultValue={savedDraft?.time_in ?? defaultValues?.time_in?.slice(0, 5) ?? '08:00'}
             className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white"
           />
         </div>
@@ -193,7 +268,7 @@ function AttendanceForm({
           <input
             name="time_out"
             type="time"
-            defaultValue={defaultValues?.time_out?.slice(0, 5) ?? ''}
+            defaultValue={savedDraft?.time_out ?? defaultValues?.time_out?.slice(0, 5) ?? ''}
             className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white"
           />
           <p className="mt-1 text-[10px] text-stone-450">Leave blank if still in progress</p>
@@ -205,7 +280,7 @@ function AttendanceForm({
         <textarea
           name="planned_task"
           rows={2}
-          defaultValue={defaultValues?.planned_task ?? ''}
+          defaultValue={savedDraft?.planned_task ?? defaultValues?.planned_task ?? ''}
           className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white resize-none"
           placeholder="What do you plan to work on?"
         />
@@ -216,7 +291,7 @@ function AttendanceForm({
         <textarea
           name="actual_accomplishment"
           rows={2}
-          defaultValue={defaultValues?.actual_accomplishment ?? ''}
+          defaultValue={savedDraft?.actual_accomplishment ?? defaultValues?.actual_accomplishment ?? ''}
           className="w-full rounded-xl border border-stone-200 bg-white/80 px-4 py-2.5 text-sm outline-none transition focus:border-red-500 focus:ring-1 focus:ring-red-500 dark:border-white/10 dark:bg-stone-950/40 dark:text-white resize-none"
           placeholder="What did you actually accomplish?"
         />
@@ -272,6 +347,7 @@ function AttendanceForm({
         <button
           type="button"
           onClick={onCancel}
+          disabled={isSaving}
           className="flex items-center gap-2 rounded-xl border border-stone-200 bg-white dark:border-white/10 dark:bg-stone-900 px-4 py-2 text-sm font-semibold text-stone-600 dark:text-stone-400 transition hover:bg-stone-50 dark:hover:bg-white/5 hover:text-stone-900 dark:hover:text-white"
         >
           <X className="h-4 w-4" />
@@ -286,38 +362,53 @@ export function AttendanceLogsClient({
   logs,
   setLogs,
   activeLog,
-  isSyncing,
-  onClockAction,
+  isClockPending,
+  reconcileLog,
+  removeLog,
   internId,
 }: Props) {
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const [selectedLog, setSelectedLog] = useState<AttendanceLog | null>(null)
   const [isPending, startTransition] = useTransition()
+  const deleteLockRef = useRef(false)
 
   function handleCreated(log: AttendanceLog) {
     setLogs((prev) => [log, ...prev].sort((a, b) => b.date.localeCompare(a.date)))
+    reconcileLog(log)
+    window.localStorage.removeItem(getDraftKey(internId))
+    window.dispatchEvent(new Event(DRAFT_EVENT))
     setShowForm(false)
     toast.success('Attendance entry logged successfully!')
   }
 
   function handleUpdated(log: AttendanceLog) {
     setLogs((prev) => prev.map((l) => (l.id === log.id ? log : l)))
+    reconcileLog(log)
+    window.localStorage.removeItem(getDraftKey(internId, log.id))
+    window.dispatchEvent(new Event(DRAFT_EVENT))
     setEditId(null)
     toast.success('Attendance entry updated!')
   }
 
   function handleDelete(logId: string) {
+    if (deleteLockRef.current) return
     if (typeof window !== 'undefined' && !window.confirm('Are you sure you want to delete this attendance log entry?')) {
       return
     }
+    deleteLockRef.current = true
     startTransition(async () => {
-      const result = await deleteAttendanceLog(logId)
-      if (result.success) {
-        setLogs((prev) => prev.filter((l) => l.id !== logId))
-        toast.success('Entry deleted successfully.')
-      } else {
-        toast.error(result.error ?? 'Failed to delete')
+      try {
+        const result = await deleteAttendanceLog(logId)
+        if (result.success) {
+          setLogs((prev) => prev.filter((l) => l.id !== logId))
+          removeLog(logId)
+          toast.success('Entry deleted successfully.')
+        } else {
+          toast.error(result.error ?? 'Failed to delete')
+        }
+      } finally {
+        deleteLockRef.current = false
       }
     })
   }
@@ -339,18 +430,11 @@ export function AttendanceLogsClient({
             Print DTR Form
           </Link>
 
-          <button
-            disabled={isSyncing}
-            onClick={onClockAction}
-            className={`flex items-center gap-1.5 rounded-xl px-4 py-2.5 text-xs font-bold text-white shadow-lg transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer ${
-              activeLog
-                ? 'bg-gradient-to-r from-amber-500 to-orange-600 shadow-orange-500/25'
-                : 'bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-500/25'
-            }`}
-          >
-            <Clock className="h-3.5 w-3.5" />
-            {isSyncing ? 'Processing…' : activeLog ? 'Clock Out' : 'Clock In'}
-          </button>
+          {activeLog && (
+            <span className="inline-flex items-center gap-1.5 rounded-xl bg-amber-500/10 px-3 py-2.5 text-xs font-bold text-amber-700 dark:text-amber-300">
+              <Clock className="h-3.5 w-3.5" />Session active
+            </span>
+          )}
 
           {!showForm && (
             <button
@@ -478,7 +562,7 @@ export function AttendanceLogsClient({
                           </button>
                           <button
                             onClick={() => handleDelete(log.id)}
-                            disabled={isPending}
+                            disabled={isPending || isClockPending}
                             className="rounded-lg p-2 text-stone-400 hover:bg-red-500/10 hover:text-red-500 dark:text-stone-500 dark:hover:bg-red-500/20 dark:hover:text-red-400 transition disabled:opacity-50"
                             title="Delete Log"
                           >
@@ -547,7 +631,7 @@ export function AttendanceLogsClient({
                       </button>
                       <button
                         onClick={() => handleDelete(log.id)}
-                        disabled={isPending}
+                        disabled={isPending || isClockPending}
                         className="rounded-lg p-1.5 text-stone-400 hover:bg-red-500/10 hover:text-red-500 dark:text-stone-550 transition disabled:opacity-50"
                       >
                         <Trash2 className="h-3.5 w-3.5" />

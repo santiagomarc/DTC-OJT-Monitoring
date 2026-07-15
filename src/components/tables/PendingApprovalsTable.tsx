@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useRef, useState, useTransition } from 'react'
 import { toast } from 'sonner'
 import { Check, UserPlus } from 'lucide-react'
 import { approveInternAction } from '@/actions/admin'
@@ -13,21 +13,34 @@ interface Props {
 export function PendingApprovalsTable({ initialPending }: Props) {
   const [pending, setPending] = useState(initialPending)
   const [loadingId, setLoadingId] = useState<string | null>(null)
-  const [, startTransition] = useTransition()
+  const [isPending, startTransition] = useTransition()
+  const lockRef = useRef(false)
 
-  if (pending.length === 0) return null
+  if (pending.length === 0) {
+    return (
+      <div className="rounded-2xl border border-emerald-500/25 bg-emerald-500/5 p-5 text-sm font-semibold text-emerald-700 dark:text-emerald-300">
+        All caught up — there are no registrations awaiting review.
+      </div>
+    )
+  }
 
   function handleApprove(internId: string) {
+    if (lockRef.current) return
+    lockRef.current = true
     setLoadingId(internId)
     startTransition(async () => {
-      const res = await approveInternAction(internId)
-      if (res.success) {
-        setPending((prev) => prev.filter((s) => s.id !== internId))
-        toast.success('Intern approved successfully!')
-      } else {
-        toast.error(res.error || 'Failed to approve.')
+      try {
+        const res = await approveInternAction(internId)
+        if (res.success) {
+          setPending((prev) => prev.filter((s) => s.id !== internId))
+          toast.success('Intern approved successfully!')
+        } else {
+          toast.error(res.error || 'Failed to approve.')
+        }
+      } finally {
+        setLoadingId(null)
+        lockRef.current = false
       }
-      setLoadingId(null)
     })
   }
 
@@ -74,8 +87,8 @@ export function PendingApprovalsTable({ initialPending }: Props) {
                 <td className="px-5 py-3.5 text-right whitespace-nowrap">
                   <button
                     onClick={() => handleApprove(s.id)}
-                    disabled={loadingId === s.id}
-                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-500/10 hover:shadow-lg transition-all duration-200 hover:scale-[1.02] active:scale-[0.98] disabled:opacity-60 cursor-pointer"
+                    disabled={isPending}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-xs font-bold text-white shadow-md shadow-emerald-500/10 transition-all duration-200 hover:shadow-lg hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     <Check className="h-3.5 w-3.5" />
                     <span>{loadingId === s.id ? 'Approving…' : 'Approve'}</span>

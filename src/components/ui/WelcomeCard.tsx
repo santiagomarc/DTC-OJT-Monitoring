@@ -1,14 +1,12 @@
 'use client'
 
-import { Clock, LogIn } from 'lucide-react'
+import { LogIn } from 'lucide-react'
 import type { AttendanceLog } from '@/types'
 
 interface WelcomeCardProps {
   firstName: string
   program: string
   activeLog: AttendanceLog | null
-  isSyncing: boolean
-  onClockAction: () => void
 }
 
 function formatTime(timeStr: string | null): string {
@@ -23,8 +21,6 @@ export function WelcomeCard({
   firstName,
   program,
   activeLog,
-  isSyncing,
-  onClockAction,
 }: WelcomeCardProps) {
   const isActive = !!activeLog
 
@@ -77,19 +73,7 @@ export function WelcomeCard({
               </div>
             )}
 
-            {/* Clock Button */}
-            <button
-              onClick={onClockAction}
-              disabled={isSyncing}
-              className={`flex w-full items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-black tracking-wide transition-all duration-200 hover:scale-[1.03] active:scale-[0.97] disabled:opacity-60 cursor-pointer shadow-lg ${
-                isActive
-                  ? 'bg-white text-orange-700 shadow-white/20 hover:bg-orange-50'
-                  : 'bg-white/20 text-white shadow-black/10 hover:bg-white/30 border border-white/25'
-              }`}
-            >
-              <Clock className="h-4 w-4 shrink-0" />
-              {isSyncing ? 'Processing…' : isActive ? 'Clock Out' : 'Clock In'}
-            </button>
+            <p className="text-xs font-medium text-white/75">Use the global clock control in the header to start or end your session.</p>
           </div>
         </div>
       </div>
