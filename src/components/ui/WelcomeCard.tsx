@@ -1,6 +1,6 @@
 'use client'
 
-import { Clock, LogIn } from 'lucide-react'
+import { Clock, LogIn, CheckCircle2 } from 'lucide-react'
 import type { AttendanceLog } from '@/types'
 import { useAttendanceSession } from '@/components/attendance/AttendanceSessionProvider'
 
@@ -8,6 +8,7 @@ interface WelcomeCardProps {
   firstName: string
   program: string
   activeLog: AttendanceLog | null
+  hasLoggedToday?: boolean
 }
 
 function formatTime(timeStr: string | null): string {
@@ -22,9 +23,11 @@ export function WelcomeCard({
   firstName,
   program,
   activeLog,
+  hasLoggedToday = false,
 }: WelcomeCardProps) {
   const { elapsedLabel, isClockPending, toggleClock } = useAttendanceSession()
   const isActive = !!activeLog
+  const isCompletedToday = hasLoggedToday && !isActive
 
   return (
     <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-red-600 to-orange-700 p-8 text-white shadow-xl shadow-orange-500/10">
@@ -61,7 +64,7 @@ export function WelcomeCard({
                 <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-amber-300" />
               </span>
               <span className="text-[11px] font-bold uppercase tracking-widest text-white/70">
-                {isActive ? 'Session Active' : 'Not Clocked In'}
+                {isActive ? 'Session Active' : isCompletedToday ? 'Session Logged' : 'Not Clocked In'}
               </span>
             </div>
 
@@ -83,19 +86,26 @@ export function WelcomeCard({
             )}
 
             {/* Clock In/Out Button */}
-            <button
-              onClick={toggleClock}
-              disabled={isClockPending}
-              aria-live="polite"
-              className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold shadow-lg transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 ${
-                isActive
-                  ? 'bg-white/20 text-white shadow-black/10 hover:bg-white/30'
-                  : 'bg-white text-red-700 shadow-black/10 hover:bg-white/90'
-              }`}
-            >
-              <Clock className="h-4 w-4 shrink-0" />
-              <span>{isClockPending ? 'Processing…' : isActive ? 'Clock Out' : 'Clock In'}</span>
-            </button>
+            {isCompletedToday ? (
+              <div className="flex w-full items-center justify-center gap-2 rounded-xl bg-white/10 px-4 py-2.5 text-sm font-bold text-white shadow-inner">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-400" />
+                <span className="text-white/90">Completed for Today</span>
+              </div>
+            ) : (
+              <button
+                onClick={toggleClock}
+                disabled={isClockPending}
+                aria-live="polite"
+                className={`flex w-full items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold shadow-lg transition-all duration-300 hover:scale-[1.03] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60 ${
+                  isActive
+                    ? 'bg-white/20 text-white shadow-black/10 hover:bg-white/30'
+                    : 'bg-white text-red-700 shadow-black/10 hover:bg-white/90'
+                }`}
+              >
+                <Clock className="h-4 w-4 shrink-0" />
+                <span>{isClockPending ? 'Processing…' : isActive ? 'Clock Out' : 'Clock In'}</span>
+              </button>
+            )}
           </div>
         </div>
       </div>

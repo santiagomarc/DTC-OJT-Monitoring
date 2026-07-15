@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import type { Student, AttendanceLog, StudentProgress } from '@/types'
 import { WelcomeCard } from '@/components/ui/WelcomeCard'
 import { ProjectCard } from '@/components/ui/ProjectCard'
@@ -20,6 +20,12 @@ export function DashboardClient({ profile, progress, initialLogs }: DashboardCli
   const { activeLog, isClockPending, reconcileLog, removeLog } = useAttendanceSession()
   const visibleLogs = activeLog && !logs.some((log) => log.id === activeLog.id) ? [activeLog, ...logs] : logs
 
+  const hasLoggedToday = useMemo(() => {
+    const now = new Date()
+    const phDate = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila' }).format(now)
+    return logs.some(log => log.date === phDate)
+  }, [logs])
+
   return (
     <div className="space-y-8 py-4">
       {/* 1. Welcome Greeting Card (At the top) */}
@@ -27,6 +33,7 @@ export function DashboardClient({ profile, progress, initialLogs }: DashboardCli
         firstName={profile.first_name}
         program={profile.program}
         activeLog={activeLog}
+        hasLoggedToday={hasLoggedToday}
       />
 
       {/* 2. Projects & Portfolio */}
